@@ -3,7 +3,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Database.db" />
@@ -13,8 +13,7 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="9.0.6" />
     <PackageReference Include="System.Formats.Asn1" Version="9.0.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.6">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

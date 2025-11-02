@@ -1,148 +1,115 @@
-﻿@* 
-PSEUDOCODE / PLAN (detailed):
-- Show a Bootstrap spinner and a progress bar while 'products' is null (loading).
-- Use a background async task to increment 'loadProgress' periodically to simulate loading progress.
-- Start the progress updater when the component initializes.
-- Simulate data loading with an async delay, then assign 'products' (could be replaced with a real service call).
-- When loading completes:
-  - Set 'loadProgress' to100.
-  - Cancel the progress updater.
-  - Trigger UI refresh.
-- Provide a simple table list view once products are loaded; show a friendly "no products" message if list is empty.
-- Implement IDisposable to cancel/cleanup the updater when the component is disposed.
-
-This comment block intentionally contains the detailed step-by-step plan required by the task.
-*@
-
-@page "/products"
-@using DataEntities
+﻿@page "/products"
 @using Store.Services
-@inject IConfiguration Configuration
+@using DataEntities
 @inject ProductService ProductService
-@attribute [StreamRendering(true)]
 
-<PageTitle>Products</PageTitle>
+<PageTitle>Products - TinyShop</PageTitle>
 
-<h1 class="mb-4">Products</h1>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Our Products</h1>
+<a href="/products/debug" class="btn btn-sm btn-outline-secondary">🔍 Debug View</a>
+    </div>
 
-<p class="text-muted mb-4">Here are some of our amazing outdoor products that you can purchase.</p>
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+     <span class="visually-hidden">Loading products...</span>
+   </div>
+      <p class="mt-3 text-muted">Loading products...</p>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger" role="alert">
+  <h4 class="alert-heading">Error Loading Products</h4>
+   <p>@errorMessage</p>
+    <hr>
+   <p class="mb-0">
+        <strong>Troubleshooting Tips:</strong><br/>
+       • Check that the Products API is running<br/>
+    • Verify the connection in appsettings.json<br/>
+    • Try refreshing the page
+   </p>
+ </div>
+    }
+  else if (products.Count == 0)
+    {
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">No Products Available</h4>
+            <p>The product catalog is currently empty.</p>
+            <hr>
+            <p class="mb-0">
+      <strong>Using Scenario 2 (Database Images)?</strong><br/>
+           Make sure to run the LoadImages.ps1 script to load product images:<br/>
+  <code>cd Products\SQL && .\LoadImages.ps1</code>
+        </p>
+    </div>
+    }
+    else
+    {
+     <div class="mb-3 text-muted">
+   Showing {@products.Count} product{@(products.Count != 1 ? "s" : "")}
+     </div>
 
-@if (products == null)
-{
- <div class="d-flex flex-column align-items-center my-4">
- <div class="spinner-border text-primary" role="status" style="width:3rem; height:3rem;">
- <span class="visually-hidden">Loading...</span>
- </div>
-
- <div class="mt-3 w-75" style="max-width:480px;">
- <div class="d-flex justify-content-between mb-1">
- <small class="text-muted">Loading products...</small>
-- <small class="text-muted">@loadProgress% </small>
-+ <small class="text-muted">@($"{loadProgress}%")</small>
- </div>
- <div class="progress" style="height:1.25rem;">
- <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-- style="width:@loadProgress%" aria-valuenow="@loadProgress" aria-valuemin="0" aria-valuemax="100">
-+ style="width:@($"{loadProgress}%")" aria-valuenow="@loadProgress" aria-valuemin="0" aria-valuemax="100">
- @if (loadProgress >=15)
- {
- <span class="visually-hidden">Loading</span>
- }
- </div>
- </div>
- </div>
- </div>
-}
-else
-{
- @if (products.Count ==0)
- {
- <div class="alert alert-info">No products available at the moment.</div>
- }
- else
- {
- <div class="product-grid">
- @foreach (var p in products)
- {
- <article class="product-card">
- <div class="product-image">
- @if (!string.IsNullOrEmpty(p.ImageUrl))
- {
- <img src="@($"{imagePrefix}{p.ImageUrl}")" alt="@p.Name" />
- }
- else
- {
- <div class="no-image">No image</div>
- }
- </div>
-
- <div class="product-meta">
- <h3 class="product-title">@p.Name</h3>
- <div class="product-bottom d-flex justify-content-between align-items-center">
- <p class="product-desc mb-0 text-muted">@p.Description</p>
- <div class="product-price text-end">@p.Price.ToString("C")</div>
- </div>
- </div>
- </article>
- }
- </div>
- }
-}
+        <div class="products-grid">
+     @foreach (var product in products)
+         {
+ <div class="product-card">
+      <div class="product-image-container">
+      <img src="@ProductService.GetImageUrl(product)" 
+     alt="@product.Name" 
+ class="product-image"
+        loading="lazy"
+         onerror="this.onerror=null; this.style.border='2px solid red'; this.title='Image failed to load'" />
+   </div>
+       <div class="product-details">
+   <h3 class="product-name">@product.Name</h3>
+     <p class="product-description">@product.Description</p>
+    <div class="product-footer">
+ <span class="product-price">@product.Price.ToString("C")</span>
+ <button class="btn btn-primary btn-sm" @onclick="() => AddToCart(product)">
+  <span class="bi bi-cart-plus"></span> Add to Cart
+               </button>
+       </div>
+         </div>
+  </div>
+            }
+   </div>
+    }
+</div>
 
 @code {
- private List<Product>? products;
- private string imagePrefix = string.Empty;
- private int loadProgress =0;
- private CancellationTokenSource? cts;
+    private List<Product> products = new();
+    private bool isLoading = true;
+    private string? errorMessage;
 
- protected override async Task OnInitializedAsync()
- {
- // Start a progress updater that simulates incremental loading.
- cts = new CancellationTokenSource();
- _ = UpdateProgressAsync(cts.Token);
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+   products = await ProductService.GetProductsPageAsync(9);
+     }
+        catch (HttpRequestException ex)
+        {
+       errorMessage = $"Failed to connect to Products API: {ex.Message}";
+       Console.WriteLine($"HTTP Error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+          errorMessage = $"An error occurred: {ex.Message}";
+       Console.WriteLine($"Error loading products: {ex.Message}");
+   }
+  finally
+        {
+          isLoading = false;
+   }
+    }
 
- // Load products from the service.
- try
- {
- imagePrefix = Configuration["ImagePrefix"] ?? string.Empty;
- products = await ProductService.GetProducts();
- }
- catch
- {
- // On error, ensure we at least set an empty list so UI can render.
- products = new List<Product>();
- }
-
- // Finalize progress and stop updater.
- loadProgress =100;
- cts.Cancel();
-
- await InvokeAsync(StateHasChanged);
- }
-
- private async Task UpdateProgressAsync(CancellationToken token)
- {
- var rnd = new Random();
- try
- {
- while (!token.IsCancellationRequested && loadProgress <100)
- {
- await Task.Delay(120, token);
- // increment progress but never jump to100 (until real load completes)
- var increment = rnd.Next(3,10);
- loadProgress = Math.Min(99, loadProgress + increment);
- await InvokeAsync(StateHasChanged);
- }
- }
- catch (OperationCanceledException)
- {
- // expected on cancellation
- }
- }
-
- public void Dispose()
- {
- cts?.Cancel();
- cts?.Dispose();
- }
+    private void AddToCart(Product product)
+    {
+        // TODO: Implement cart functionality
+        Console.WriteLine($"Added {product.Name} to cart");
+    }
 }
