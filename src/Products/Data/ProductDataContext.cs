@@ -5,7 +5,7 @@ namespace Products.Data;
 
 public class ProductDataContext : DbContext
 {
-    public ProductDataContext (DbContextOptions<ProductDataContext> options)
+    public ProductDataContext(DbContextOptions<ProductDataContext> options)
         : base(options)
     {
     }

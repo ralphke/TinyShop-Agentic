@@ -37,11 +37,13 @@ This comment block intentionally contains the detailed step-by-step plan require
  <div class="mt-3 w-75" style="max-width:480px;">
  <div class="d-flex justify-content-between mb-1">
  <small class="text-muted">Loading products...</small>
- <small class="text-muted">@loadProgress% </small>
+- <small class="text-muted">@loadProgress% </small>
++ <small class="text-muted">@($"{loadProgress}%")</small>
  </div>
  <div class="progress" style="height:1.25rem;">
  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
- style="width:@loadProgress%" aria-valuenow="@loadProgress" aria-valuemin="0" aria-valuemax="100">
+- style="width:@loadProgress%" aria-valuenow="@loadProgress" aria-valuemin="0" aria-valuemax="100">
++ style="width:@($"{loadProgress}%")" aria-valuenow="@loadProgress" aria-valuemin="0" aria-valuemax="100">
  @if (loadProgress >=15)
  {
  <span class="visually-hidden">Loading</span>
