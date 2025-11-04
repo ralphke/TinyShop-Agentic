@@ -21,12 +21,11 @@ Here are some guidelines to consider when creating a Copilot instructions file:
 
 ## Create a Copilot instructions file
 
-1. [] Open the **copilot-instructions.md** file in the **.github** folder, you can also get to it from the **Solution Items** folder in Visual Studio.
-2. [] Add project-specific information about your application:
+1. [] In the **Solution Explorer**, expand the **Solution Items** and open **copilot-instructions.md**
+
+1. [] Add project-specific information about your application:
 
     ```markdown
-    ## TinyShop
-
     ### Backend
     - Products project is the backend API.
     - Built with .NET Minimal APIs.
@@ -39,8 +38,13 @@ Here are some guidelines to consider when creating a Copilot instructions file:
     - UI should have a modern look and feel.
     - CSS should be in .razor.css files.
     ```
+1. Start a new chat by clicking the `+` icon in the top right corner of the chat window.
 
-3. [] Go back to Copilot Chat and re-run the prompt from Part 3.
-4. [] Notice how the responses now incorporate your custom instructions.
+   ![New chat](./images/5-new-edits.png)
+
+1. [] Go back to Copilot Chat and re-run the prompt from Part 3, you can do this by pressing the up key. or
+1. [] Ask: `How would I implement getting and visualizing the products in a table using the code in #ProductService and the css required.`
+1. [] Review the code suggestion but don't implement it yet.
+1. [] Notice how the responses now incorporate your custom instructions.
 
 **Key Takeaway**: Custom instructions make Copilot's suggestions more aligned with your project standards and architecture preferences.
