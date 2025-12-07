@@ -37,6 +37,9 @@ public class CartService : IDisposable
 
     public void RemoveItem(int productId, int quantity = 1)
     {
+        if (quantity <= 0)
+            throw new ArgumentException("Quantity must be greater than zero", nameof(quantity));
+
         if (_items.ContainsKey(productId))
         {
             _items[productId].Quantity -= quantity;

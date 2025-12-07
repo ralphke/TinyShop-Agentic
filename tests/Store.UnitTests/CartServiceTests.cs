@@ -153,4 +153,29 @@ public class CartServiceTests
         cart.Clear();
         Assert.Equal(6, changeCount);
     }
+
+    [Fact]
+    public void AddItem_WithInvalidQuantity_ThrowsException()
+    {
+        // Arrange
+        var cart = new CartService();
+        var product = CreateTestProduct();
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => cart.AddItem(product, 0));
+        Assert.Throws<ArgumentException>(() => cart.AddItem(product, -1));
+    }
+
+    [Fact]
+    public void RemoveItem_WithInvalidQuantity_ThrowsException()
+    {
+        // Arrange
+        var cart = new CartService();
+        var product = CreateTestProduct();
+        cart.AddItem(product, 5);
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => cart.RemoveItem(product.Id, 0));
+        Assert.Throws<ArgumentException>(() => cart.RemoveItem(product.Id, -1));
+    }
 }
