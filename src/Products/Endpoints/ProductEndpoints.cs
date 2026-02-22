@@ -20,11 +20,16 @@ public static class ProductEndpoints
         });
    
         // GET all products
-        group.MapGet("/", async (ProductDataContext db) =>
+        group.MapGet("/", async (ProductDataContext db, int? page = null, int? size = null) =>
         {
-        return await db.Product
-   .OrderBy(p => p.Id)
-        .ToListAsync();
+            var query = db.Product.OrderBy(p => p.Id);
+            
+            if (page.HasValue && size.HasValue && page.Value > 0 && size.Value > 0)
+            {
+                query = (IOrderedQueryable<Product>)query.Skip((page.Value - 1) * size.Value).Take(size.Value);
+            }
+            
+            return await query.ToListAsync();
         })
         .WithName("GetAllProducts")
     .Produces<List<Product>>(StatusCodes.Status200OK);

@@ -1,6 +1,7 @@
 ﻿using DataEntities;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Store.Services;
 
@@ -8,8 +9,9 @@ public class ProductService
 {
     private readonly HttpClient httpClient;
     private readonly string browserEndpoint;
+    private readonly IMemoryCache cache;
 
-    public ProductService(HttpClient httpClient, IConfiguration configuration)
+    public ProductService(HttpClient httpClient, IConfiguration configuration, IMemoryCache cache)
     {
         this.httpClient = httpClient;
         // Get browser-accessible endpoint for image URLs (fallback to localhost:7130)
@@ -20,23 +22,28 @@ public class ProductService
         {
             this.browserEndpoint += "/";
         }
+        this.cache = cache;
     }
 
     public async Task<List<Product>> GetProducts()
     {
-        List<Product>? products = null;
-        var response = await httpClient.GetAsync("/api/Product");
-        if (response.IsSuccessStatusCode)
+        return await cache.GetOrCreateAsync("products", async entry =>
         {
-            var options = new JsonSerializerOptions
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5); // Cache für 5 Minuten
+            List<Product>? products = null;
+            var response = await httpClient.GetAsync("/api/Product");
+            if (response.IsSuccessStatusCode)
             {
-                PropertyNameCaseInsensitive = true
-            };
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
 
-            products = await response.Content.ReadFromJsonAsync(ProductSerializerContext.Default.ListProduct);
-        }
+                products = await response.Content.ReadFromJsonAsync(ProductSerializerContext.Default.ListProduct);
+            }
 
-        return products ?? new List<Product>();
+            return products ?? new List<Product>();
+        });
     }
 
     /// <summary>
@@ -46,8 +53,12 @@ public class ProductService
     /// <returns>List of products limited to the specified page size</returns>
     public async Task<List<Product>> GetProductsPageAsync(int pageSize = 12)
     {
-        var allProducts = await GetProducts();
-        return allProducts.Take(pageSize).ToList();
+        var response = await httpClient.GetAsync($"/api/Product?size={pageSize}");
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync(ProductSerializerContext.Default.ListProduct) ?? new List<Product>();
+        }
+        return new List<Product>();
     }
 
     public async Task<Product?> GetProductByIdAsync(int id)

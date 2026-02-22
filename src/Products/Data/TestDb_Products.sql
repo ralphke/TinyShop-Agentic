@@ -7,29 +7,36 @@ IF OBJECT_ID('dbo.Products', 'U') IS NOT NULL
     DROP TABLE dbo.Products;
 GO
 
-Create Table Products
-(
-	Id int primary key,
-	name varchar(50),
-	Description varchar(255),
-	Price decimal(10,2),
-	ImageUrl varchar(255),
-	image varbinary(max)
+CREATE TABLE [dbo].[Products] (
+    [Id]           INT             IDENTITY (1, 1) NOT NULL,
+    [Name]         NVARCHAR (200)  NOT NULL,
+    [Description]  NVARCHAR (1000) NULL,
+    [Price]        DECIMAL (18, 2) NOT NULL,
+    [ImageUrl]     NVARCHAR (500)  NULL,
+    [ImageData]    VARBINARY (MAX) NULL,
+    [CreatedDate]  DATETIME2 (7)   DEFAULT (getutcdate()) NULL,
+    [ModifiedDate] DATETIME2 (7)   DEFAULT (getutcdate()) NULL,
+    PRIMARY KEY CLUSTERED ([Id] ASC)
 );
+
+
 GO
+CREATE NONCLUSTERED INDEX [IX_Products_Name]
+    ON [dbo].[Products]([Name] ASC);
+
 
 BEGIN TRANSACTION;
 
-INSERT INTO Products (Id, name, Description, Price, ImageUrl, image) VALUES
-(1, 'Solar Powered Flashlight', 'A fantastic product for outdoor enthusiasts', 19.99, 'product1.png', NULL),
-(2, 'Hiking Poles', 'Ideal for camping and hiking trips', 24.99, 'product2.png', NULL),
-(3, 'Outdoor Rain Jacket', 'This product will keep you warm and dry in all weathers', 49.99, 'product3.png', NULL),
-(4, 'Survival Kit', 'A must-have for any outdoor adventurer', 99.99, 'product4.png', NULL),
-(5, 'Outdoor Backpack', 'This backpack is perfect for carrying all your outdoor essentials', 39.99, 'product5.png', NULL),
-(6, 'Camping Cookware', 'This cookware set is ideal for cooking outdoors', 29.99, 'product6.png', NULL),
-(7, 'Camping Stove', 'This stove is perfect for cooking outdoors', 49.99, 'product7.png', NULL),
-(8, 'Camping Lantern', 'This lantern is perfect for lighting up your campsite', 19.99, 'product8.png', NULL),
-(9, 'Camping Tent', 'This tent is perfect for camping trips', 99.99, 'product9.png', NULL);
+INSERT INTO Products (name, Description, Price, ImageUrl, ImageData) VALUES
+('Solar Powered Flashlight', 'A fantastic product for outdoor enthusiasts', 19.99, 'images/product1.png', NULL),
+('Hiking Poles', 'Ideal for camping and hiking trips', 24.99, 'images/product2.png', NULL),
+('Outdoor Rain Jacket', 'This product will keep you warm and dry in all weathers', 49.99, 'images/product3.png', NULL),
+('Survival Kit', 'A must-have for any outdoor adventurer', 99.99, 'images/product4.png', NULL),
+('Outdoor Backpack', 'This backpack is perfect for carrying all your outdoor essentials', 39.99, 'images/product5.png', NULL),
+('Camping Cookware', 'This cookware set is ideal for cooking outdoors', 29.99, 'images/product6.png', NULL),
+('Camping Stove', 'This stove is perfect for cooking outdoors', 49.99, 'images/product7.png', NULL),
+('Camping Lantern', 'This lantern is perfect for lighting up your campsite', 19.99, 'images/product8.png', NULL),
+('Camping Tent', 'This tent is perfect for camping trips', 99.99, 'images/product9.png', NULL);
 
 COMMIT;
 GO
@@ -49,50 +56,53 @@ END CATCH
 GO
 
 -- Base folder where images are stored on the SQL Server machine.
-DECLARE @BasePath nvarchar(4000) = N'D:\repros\VS2022-lab300\src\Products\wwwroot\images\';
+DECLARE @BasePath nvarchar(4000) = N'D:\repros\VS2022-lab300\src\Products\wwwroot\images\product';
+
 
 -- Use dynamic SQL per-row to pass a literal path into OPENROWSET(BULK ...)
 BEGIN TRANSACTION;
 BEGIN TRY
-    DECLARE @Id int;
+    DECLARE @ProductId INT;
     DECLARE @ImageUrl nvarchar(255);
-    DECLARE @FullPath nvarchar(4000);
+    DECLARE @ImagePath nvarchar(4000);
     DECLARE @sql nvarchar(max);
+    DECLARE @ImageIndex INT = 1;
+    DECLARE @MaxImages INT = 9;
 
-    DECLARE image_cursor CURSOR LOCAL FAST_FORWARD FOR
-        SELECT Id, ImageUrl FROM Products WHERE ImageUrl IS NOT NULL;
+    -- Cursor to iterate through products ordered by ID
+    DECLARE product_cursor CURSOR FOR
+        SELECT Id FROM dbo.Products ORDER BY Id;
 
-    OPEN image_cursor;
-    FETCH NEXT FROM image_cursor INTO @Id, @ImageUrl;
+    OPEN product_cursor;
+    FETCH NEXT FROM product_cursor INTO @ProductId;
 
-    WHILE @@FETCH_STATUS = 0
+    WHILE @@FETCH_STATUS = 0 AND @ImageIndex <= @MaxImages
     BEGIN
-        -- Build full path and escape single quotes
-        SET @FullPath = @BasePath + ISNULL(@ImageUrl, '');
-        SET @FullPath = REPLACE(@FullPath, '''', '''''');
-
-        -- Build dynamic SQL using a string literal for OPENROWSET path
-        SET @sql = N'
-            UPDATE Products
-            SET image = (
-                SELECT BulkColumn
-                FROM OPENROWSET(BULK N''' + @FullPath + ''', SINGLE_BLOB) AS img
-            )
-            WHERE Id = ' + CAST(@Id AS nvarchar(10)) + ';';
-
-        BEGIN TRY
-            EXEC sp_executesql @sql;
+        -- Construct the image file path based on sequential index
+        SET @ImagePath = @BasePath  + CAST(@ImageIndex AS NVARCHAR(10)) + N'.png';
+    
+        -- Build dynamic SQL to load the image
+        SET @SQL = N'UPDATE dbo.Products 
+                SET ImageData = (SELECT * FROM OPENROWSET(BULK ''' + @ImagePath + N''', SINGLE_BLOB) AS ImageData),
+                    ImageUrl = ''images/product' + CAST(@ImageIndex AS NVARCHAR(10)) + N'.png''
+         WHERE Id = ' + CAST(@ProductId AS NVARCHAR(10)) + N';';
+    
+        -- Execute the dynamic SQL
+      BEGIN TRY
+            EXEC sp_executesql @SQL;
+            PRINT 'Successfully loaded image ' + CAST(@ImageIndex AS NVARCHAR(10)) + ' for Product ID: ' + CAST(@ProductId AS NVARCHAR(10)) + ' - ' + @ImagePath;
         END TRY
         BEGIN CATCH
-            PRINT 'Failed to load ' + ISNULL(@ImageUrl, '<null>') + ': ' + ERROR_MESSAGE();
-            -- continue to next file
-        END CATCH
-
-        FETCH NEXT FROM image_cursor INTO @Id, @ImageUrl;
+          PRINT 'Error loading image ' + CAST(@ImageIndex AS NVARCHAR(10)) + ' for Product ID: ' + CAST(@ProductId AS NVARCHAR(10)) + ' - ' + ERROR_MESSAGE();
+      END CATCH
+    
+        -- Move to next product and image
+        SET @ImageIndex = @ImageIndex + 1;
+        FETCH NEXT FROM product_cursor INTO @ProductId;
     END
 
-    CLOSE image_cursor;
-    DEALLOCATE image_cursor;
+    CLOSE product_cursor;
+    DEALLOCATE product_cursor;
 
     COMMIT TRANSACTION;
 END TRY

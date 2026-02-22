@@ -16,6 +16,9 @@ builder.Services.AddHttpClient<ProductService>(c =>
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddMemoryCache();
+// Register CartService as scoped so each user/session gets its own cart
+builder.Services.AddScoped<CartService>();
 
 var app = builder.Build();
 
