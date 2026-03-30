@@ -1,0 +1,16 @@
+@page "/order-confirmation"
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+<PageTitle>Order Confirmed - TinyShop</PageTitle>
+
+<div class="container-fluid">
+    <div class="text-center py-5">
+        <div class="mb-4" style="font-size: 4rem;">&#x2705;</div>
+        <h1 class="display-5 fw-bold text-success mb-3">Order Confirmed!</h1>
+        <p class="lead text-muted mb-4">Thank you for your purchase. Your order has been placed successfully.</p>
+        <button class="btn btn-primary btn-lg" @onclick='() => NavigationManager.NavigateTo("/products")'>
+            Continue Shopping
+        </button>
+    </div>
+</div>

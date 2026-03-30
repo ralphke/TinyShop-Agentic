@@ -3,6 +3,7 @@ using Store.Services;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 
 var builder = WebApplication.CreateBuilder(args);
+var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", true);
 
 builder.AddServiceDefaults();
 
@@ -22,8 +23,6 @@ builder.Services.AddSingleton<CircuitHandler, CartCircuitHandler>();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMemoryCache();
-// Register CartService as scoped so each user/session gets its own cart
-builder.Services.AddScoped<CartService>();
 
 var app = builder.Build();
 
@@ -37,7 +36,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+if (enableHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseStaticFiles();
 app.UseAntiforgery();

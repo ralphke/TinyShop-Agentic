@@ -3,6 +3,7 @@ using Products.Data;
 using Products.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
+var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", true);
 
 builder.AddServiceDefaults();
 
@@ -11,7 +12,16 @@ var connectionString = builder.Configuration.GetConnectionString("ProductsDb")
     ?? "Server=(localdb)\\MSSQLLocalDB;Database=TestDB;Integrated Security=true;TrustServerCertificate=True;";
 
 builder.Services.AddDbContext<ProductDataContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    if (builder.Environment.IsEnvironment("Testing"))
+    {
+        options.UseInMemoryDatabase("ProductsTestDb");
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
+});
 
 // Add CORS policy for Blazor Server frontend
 builder.Services.AddCors(options =>
@@ -30,7 +40,10 @@ var app = builder.Build();
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
-app.UseHttpsRedirection();
+if (enableHttpsRedirection)
+{
+    app.UseHttpsRedirection();
+}
 
 // Enable CORS before other middleware
 app.UseCors("AllowBlazorClient");

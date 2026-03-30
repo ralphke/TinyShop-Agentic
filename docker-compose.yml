@@ -19,7 +19,8 @@ services:
       - sqlserver
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: "8080"
+      EnableHttpsRedirection: "false"
       ConnectionStrings__ProductsDb: Server=sqlserver,1433;Database=TinyShop;User Id=sa;Password=P@ssw0rd123!;TrustServerCertificate=True;Encrypt=False;
     ports:
       - "5228:8080"
@@ -34,12 +35,17 @@ services:
       - products
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: "8080"
+      EnableHttpsRedirection: "false"
       ProductEndpoint: http://products:8080
       ProductBrowserEndpoint: http://localhost:5228
+      Logging__LogLevel__Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager: Error
     ports:
       - "5158:8080"
+    volumes:
+      - store-dataprotection-keys:/root/.aspnet/DataProtection-Keys
     restart: on-failure
 
 volumes:
   sqlserver-data:
+  store-dataprotection-keys:

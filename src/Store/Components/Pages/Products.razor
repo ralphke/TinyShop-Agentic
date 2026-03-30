@@ -14,7 +14,13 @@
         <a href="/products/debug" class="btn btn-sm btn-outline-secondary">🔍 Debug View</a>
     </div>
 
-    @* Cart messages removed *@
+    @if (lastAddedProduct is not null)
+    {
+        <div class="alert alert-success alert-dismissible" role="alert">
+            <strong>@lastAddedProduct</strong> added to cart! <a href="/checkout" class="alert-link">View cart</a>
+            <button type="button" class="btn-close" @onclick="() => lastAddedProduct = null" aria-label="Close"></button>
+        </div>
+    }
 
     @if (isLoading)
     {
@@ -89,10 +95,12 @@
     private bool isLoading = true;
     private string? errorMessage;
     
+    private string? lastAddedProduct;
+
     private void AddToCart(Product product)
     {
-        CartService.Add(product, 1);
-        Console.WriteLine($"Added {product.Name} to cart");
+        CartService.AddItem(product, 1);
+        lastAddedProduct = product.Name;
     }
 
     protected override async Task OnInitializedAsync()
@@ -117,5 +125,5 @@
         }
     }
 
-    // Cart functionality removed
+
 }

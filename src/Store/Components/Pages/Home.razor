@@ -4,6 +4,7 @@
 @using DataEntities
 @inject ProductService ProductService
 @inject NavigationManager NavigationManager
+@inject Store.Services.CartService CartService
 
 <PageTitle>TinyShop - Home</PageTitle>
 
@@ -98,5 +99,10 @@ catch (Exception ex)
     private void NavigateToProducts()
     {
         NavigationManager.NavigateTo("/products");
+    }
+
+    private void AddToCart(Product product)
+    {
+        CartService.AddItem(product, 1);
     }
 }

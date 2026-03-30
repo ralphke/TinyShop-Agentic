@@ -23,6 +23,58 @@ This lab will guide you through using GitHub Copilot's various features in Visua
 - dotnet dev-certs https --clean
 - This will remove all developer certificates from your machine
 
+## Current Workspace Status
+
+The workspace currently includes the following completed updates:
+
+- Shopping cart and checkout flow restored in the Store frontend
+- Order confirmation page added
+- Impressum page for RaKeTe-Technology added and linked from the navigation
+- Test projects aligned to .NET 10
+- Docker Compose setup hardened for HTTP-only local runtime and persistent DataProtection keys
+
+## Run with Docker Compose
+
+From the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+Useful endpoints:
+
+- Store: http://localhost:5158
+- Products API: http://localhost:5228/api/Product
+- Checkout: http://localhost:5158/checkout
+- Impressum: http://localhost:5158/impressum
+
+Stop the stack:
+
+```bash
+docker compose down
+```
+
+Quick health check:
+
+```powershell
+curl.exe -s -o NUL -w "products:%{http_code}`n" http://localhost:5228/api/Product
+curl.exe -s -o NUL -w "store:%{http_code}`n" http://localhost:5158/
+curl.exe -s -o NUL -w "checkout:%{http_code}`n" http://localhost:5158/checkout
+curl.exe -s -o NUL -w "impressum:%{http_code}`n" http://localhost:5158/impressum
+```
+
+## Run Tests
+
+Run all test projects explicitly:
+
+```bash
+dotnet test src/Store.Tests/Store.Tests.csproj
+dotnet test tests/Store.UnitTests/Store.UnitTests.csproj
+dotnet test tests/Store.IntegrationTests/Store.IntegrationTests.csproj
+dotnet test src/Tests/IntegrationTests/IntegrationTests.csproj
+dotnet test src/Tests/TinyShopTest/TinyShopTest.csproj
+```
+
 ## WSL Dev Container
 
 This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker-in-Docker enabled so Aspire can start its SQL Server container from inside the development container.

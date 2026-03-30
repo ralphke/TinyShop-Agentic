@@ -1,6 +1,7 @@
 using Bunit;
 using DataEntities;
 using FluentAssertions;
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Store.Components.Pages;
 using Store.Services;
@@ -123,5 +124,26 @@ public class CartWorkflowTests : TestContext
 
         // Assert
         changeCount.Should().Be(4); // Add, Add, Remove, Clear
+    }
+
+    [Fact]
+    public void CheckoutFlow_SubmitOrder_ClearsCartAndNavigatesToConfirmation()
+    {
+        // Arrange
+        var cartService = new CartService();
+        var product = new Product { Id = 7, Name = "Flow Product", Price = 12.34m };
+        cartService.AddItem(product, 2);
+
+        Services.AddScoped<CartService>(_ => cartService);
+        var navigationManager = Services.GetRequiredService<NavigationManager>();
+
+        // Act
+        var cut = RenderComponent<Checkout>();
+        cut.Find("button[type='submit']").Click();
+
+        // Assert
+        cartService.GetItems().Should().BeEmpty();
+        cartService.GetTotal().Should().Be(0m);
+        navigationManager.Uri.Should().EndWith("/order-confirmation");
     }
 }

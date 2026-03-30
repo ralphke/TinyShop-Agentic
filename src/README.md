@@ -2,231 +2,88 @@
 
 ## Overview
 
-TinyShop is a .NET 9 e-commerce application with:
-- **Products API**: Backend API serving product data and images
-- **Store**: Blazor Server frontend for product browsing
+TinyShop is a .NET 10 e-commerce sample with:
 
-## Quick Start
+- Products API (Minimal API + EF Core + SQL Server)
+- Store (Blazor Server frontend)
+- Aspire AppHost orchestration
+- Docker Compose workflow for local containerized runs
 
-### 1. Run the Application
+## Current Features
+
+- Product catalog with database-backed images
+- Shopping cart flow (add items, cart badge, clear cart)
+- Checkout flow and order confirmation page
+- Impressum page for RaKeTe-Technology in navigation
+
+## Run Options
+
+### Option A: Aspire (recommended for solution development)
 
 ```bash
-# Set TinyShop.AppHost as startup project in Visual Studio
-# Press F5
+dotnet run --project TinyShop.AppHost
 ```
 
-The application will start with .NET Aspire orchestration.
+### Option B: Docker Compose
 
-### 2. Load Product Images
+From repository root:
 
-Images are stored in the database. To load them:
+```bash
+docker compose up -d --build
+```
+
+Endpoints in compose mode:
+
+- Store: http://localhost:5158
+- Products API: http://localhost:5228/api/Product
+- Checkout: http://localhost:5158/checkout
+- Impressum: http://localhost:5158/impressum
+
+Stop compose:
+
+```bash
+docker compose down
+```
+
+## Image Loading and Seeding
+
+On first startup, Products initializes the database and seeds product data.
+If image bytes are missing in an existing DB, use:
 
 ```powershell
 cd D:\repros\VS2022-lab300\src\Products\SQL
 .\LoadImages.ps1
 ```
 
-This uploads images from `Products/wwwroot/images/` into the database.
+## Configuration Notes
 
-### 3. Access the Application
+- Store uses ProductService as typed HttpClient and reads ProductEndpoint from config.
+- Products uses SQL Server by default.
+- Products uses EF Core InMemory only when environment is Testing (for integration tests).
+- HTTPS redirection is configurable through EnableHttpsRedirection (used as false in compose).
 
-- **Store**: `https://localhost:7085`
-- **Products API**: `https://localhost:7130/api/Product`
-- **Debug View**: `https://localhost:7085/products/debug`
+## Tests
 
-## Architecture
+Run all test projects:
 
-### Scenario 2: Database Image Serving
-
-Images are served from the database via API endpoints:
-
+```bash
+dotnet test src/Store.Tests/Store.Tests.csproj
+dotnet test tests/Store.UnitTests/Store.UnitTests.csproj
+dotnet test tests/Store.IntegrationTests/Store.IntegrationTests.csproj
+dotnet test src/Tests/IntegrationTests/IntegrationTests.csproj
+dotnet test src/Tests/TinyShopTest/TinyShopTest.csproj
 ```
-Database (ImageData column)
-    ?
-GET /api/Product/{id}/image
-    ?
-Binary PNG returned to browser
-```
-
-### Key Components
-
-**Products API**:
-- SQL Server database (LocalDB)
-- Entity Framework Core
-- Minimal APIs
-- CORS enabled for Blazor frontend
-
-**Store (Blazor Server)**:
-- Interactive Server rendering
-- ProductService for API communication
-- Responsive grid layout
-- Bootstrap styling
-
-## Configuration
-
-### Store (`Store/appsettings.json`)
-
-```json
-{
-  "ProductEndpoint": "https+http://products",    // Server-to-server
-  "ProductBrowserEndpoint": "https://localhost:7130"  // Browser-accessible URLs
-}
-```
-
-- `ProductEndpoint`: Used for API calls (service discovery)
-- `ProductBrowserEndpoint`: Used for image URLs in HTML
-
-### Products (`Products/Program.cs`)
-
-- CORS enabled for cross-origin image requests
-- SQL Server LocalDB connection
-- Static files middleware for fallback images
-
-## Database
-
-### Connection String
-
-```
-Server=(localdb)\MSSQLLocalDB;Database=TestDB;Integrated Security=true;TrustServerCertificate=True;
-```
-
-### Schema
-
-**Products Table**:
-- `Id` (int, PK)
-- `Name` (nvarchar)
-- `Description` (nvarchar)
-- `Price` (decimal)
-- `ImageUrl` (nvarchar) - NULL in Scenario 2
-- `ImageData` (varbinary(max)) - Binary PNG data
-- `CreatedDate` (datetime2)
-- `ModifiedDate` (datetime2)
-
-## Image Loading
-
-### PowerShell Script (Recommended)
-
-```powershell
-.\Products\SQL\LoadImages.ps1
-```
-
-Uploads all images from `Products/wwwroot/images/` to database via API.
-
-### SQL Script (Requires Permissions)
-
-```sql
--- Enable Ad Hoc Distributed Queries first
-.\Products\SQL\LoadImages.sql
-```
-
-Uses OPENROWSET to load images directly into database.
 
 ## Troubleshooting
 
-### Images Not Displaying
+### Products assembly blocked by local Windows Application Control
 
-1. **Check images are loaded**:
- - Visit: `/api/Product/debug/images`
-   - Should show: `productsWithImageData: 9`
+If you see a FileLoadException mentioning policy block on Products.dll, run via Docker Compose or dev container instead of direct host execution.
 
-2. **Verify CORS**:
- - Open browser DevTools (F12)
-   - Check Console for CORS errors
-   - Should have no errors
+### Images not displaying
 
-3. **Check image endpoint**:
-   - Visit: `https://localhost:7130/api/Product/1/image`
-   - Should display image directly
+Use the debug endpoint:
 
-4. **Re-run LoadImages.ps1**:
- - Ensure Products API is running
-   - Run the script again
+- /api/Product/debug/images
 
-### Connection Issues
-
-- Ensure LocalDB is installed
-- Check connection string in Products/Program.cs
-- Verify database exists (auto-created on first run)
-
-## Development
-
-### Build & Run
-
-```bash
-dotnet restore
-dotnet build
-dotnet run --project TinyShop.AppHost
-```
-
-### Database Reset
-
-```sql
-USE master;
-DROP DATABASE TestDB;
-```
-
-Application will recreate and seed on next run.
-
-## Production Considerations
-
-### CORS Policy
-
-Current: `AllowAnyOrigin()` (development)
-
-For production, restrict to specific origins:
-
-```csharp
-policy.WithOrigins("https://your-store.com")
-      .AllowAnyMethod()
-      .AllowAnyHeader();
-```
-
-### Image Storage
-
-**Current (Scenario 2)**: Database storage
-- Pros: Single source of truth, easy backup
-- Cons: Larger database, slower than static files
-
-**Alternative (Scenario 3)**: Static files in `wwwroot/images`
-- Pros: Faster, CDN-friendly
-- Cons: Separate deployment, no database integration
-
-## Key Features
-
-- ? Product catalog with images
-- ? Database image serving
-- ? Responsive grid layout
-- ? Cross-origin resource sharing (CORS)
-- ? .NET Aspire orchestration
-- ? Entity Framework Core
-- ? Blazor Server interactive components
-
-## Project Structure
-
-```
-src/
-??? TinyShop.AppHost/         # .NET Aspire orchestration
-??? Products/        # Backend API
-?   ??? Endpoints/          # API endpoints
-?   ??? Data/            # EF Core context
-?   ??? SQL/  # Database scripts
-?   ??? wwwroot/images/     # Source images
-??? Store/        # Blazor frontend
-?   ??? Components/Pages/     # Razor pages
-?   ??? Services/       # API services
-?   ??? wwwroot/   # Static assets
-??? DataEntities/         # Shared models
-??? TinyShop.ServiceDefaults/ # Common services
-
-```
-
-## Support
-
-For issues or questions, check:
-- Products API debug endpoint: `/api/Product/debug/images`
-- Store debug page: `/products/debug`
-- Browser DevTools Console (F12)
-
----
-
-**Application ready to run!** ??
+Then reload images with LoadImages.ps1 if needed.
