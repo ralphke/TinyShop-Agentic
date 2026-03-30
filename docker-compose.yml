@@ -1,0 +1,45 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: tinyshop-sqlserver
+    environment:
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: P@ssw0rd123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  products:
+    build:
+      context: .
+      dockerfile: src/Products/Dockerfile
+    container_name: tinyshop-products
+    depends_on:
+      - sqlserver
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__ProductsDb: Server=sqlserver,1433;Database=TinyShop;User Id=sa;Password=P@ssw0rd123!;TrustServerCertificate=True;Encrypt=False;
+    ports:
+      - "5228:8080"
+    restart: on-failure
+
+  store:
+    build:
+      context: .
+      dockerfile: src/Store/Dockerfile
+    container_name: tinyshop-store
+    depends_on:
+      - products
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ProductEndpoint: http://products:8080
+      ProductBrowserEndpoint: http://localhost:5228
+    ports:
+      - "5158:8080"
+    restart: on-failure
+
+volumes:
+  sqlserver-data:

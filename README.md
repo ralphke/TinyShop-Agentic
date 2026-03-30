@@ -10,7 +10,7 @@ This lab will guide you through using GitHub Copilot's various features in Visua
 
 - Visual Studio 2022 with GitHub Copilot extension installed
 - starting Visual Studio 2022 >= 17.13, GitHub Copilot is integrated with the VS Shell
-- .NET 9 SDK
+- .NET 10 SDK
 - GitHub account with Copilot subscription (including Free)
 - make sure your nuget packages match the requiements by running the following commnads in the T.\src folder
 - dotnet nuget locals all --clear
@@ -22,6 +22,27 @@ This lab will guide you through using GitHub Copilot's various features in Visua
 - To clean-up the environment, you can run the following command
 - dotnet dev-certs https --clean
 - This will remove all developer certificates from your machine
+
+## WSL Dev Container
+
+This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker-in-Docker enabled so Aspire can start its SQL Server container from inside the development container.
+
+Use this workflow on Windows:
+
+1. Install WSL 2 and a Linux distro such as Ubuntu.
+2. Install Docker Desktop and enable WSL integration for that distro.
+3. Clone the repository inside the WSL filesystem, for example under `~/src/VS2022-lab300`, instead of working from `/mnt/d/...`.
+4. Open the folder from VS Code in a WSL window.
+5. Run `Dev Containers: Reopen in Container`.
+6. After the container finishes provisioning, start the app with `aspire run`.
+
+Quick verification inside WSL before reopening in the container:
+
+```bash
+docker version
+```
+
+If that command fails in WSL, the dev container will not be able to provision Docker support correctly.
 
 
 ## Lab Overview
