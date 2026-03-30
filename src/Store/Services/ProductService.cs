@@ -43,7 +43,7 @@ public class ProductService
             }
 
             return products ?? new List<Product>();
-        });
+        }) ?? new List<Product>();
     }
 
     /// <summary>
