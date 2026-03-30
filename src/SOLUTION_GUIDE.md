@@ -1,7 +1,7 @@
 # TinyShop Solution Guide
 
 **Version:** 1.0  
-**Target Framework:** .NET 9  
+**Target Framework:** .NET 10 
 **Last Updated:** 2025
 
 ---
