@@ -1,0 +1,151 @@
+@page "/login"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Web
+@inject Store.Services.CustomerSessionService CustomerSession
+@inject Store.Services.IShopApiService ShopApiService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>Login - TinyShop</PageTitle>
+
+<div class="register-shell">
+    <div class="register-header">
+        <div>
+            <h1>Sign In</h1>
+            <p class="text-muted mb-0">Login to your account to view order history and manage your profile.</p>
+        </div>
+        <a href="/cart" class="btn btn-outline-primary">View Cart</a>
+    </div>
+
+    @if (successMessage is not null)
+    {
+        <div class="alert alert-success" role="alert">@successMessage</div>
+    }
+
+    @if (errorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+
+    <div class="register-grid">
+        <section class="register-card">
+            <h2>Login</h2>
+
+            @if (CustomerSession.CurrentCustomer is not null)
+            {
+                <div class="alert alert-info">
+                    <p class="mb-0">You are already signed in as <strong>@CustomerSession.CurrentCustomer.Email</strong></p>
+                </div>
+                <div class="register-actions">
+                    <a href="/register" class="btn btn-primary">Go to your account</a>
+                    <button type="button" class="btn btn-outline-danger" @onclick="LogoutAsync">Sign out</button>
+                </div>
+            }
+            else
+            {
+                <EditForm Model="loginRequest" OnValidSubmit="LoginAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label for="login-email" class="form-label">Email</label>
+                        <InputText id="login-email" class="form-control" @bind-Value="loginRequest.Email" />
+                        <ValidationMessage For="() => loginRequest.Email" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="login-password" class="form-label">Password</label>
+                        <InputText id="login-password" class="form-control" type="password" @bind-Value="loginRequest.Password" />
+                        <ValidationMessage For="() => loginRequest.Password" />
+                    </div>
+
+                    <div class="register-actions">
+                        <button type="submit" class="btn btn-primary w-100" disabled="@isBusy">Sign In</button>
+                    </div>
+                </EditForm>
+
+                <hr />
+
+                <p class="text-center text-muted">Don't have an account? <a href="/register">Create one here</a>.</p>
+            }
+        </section>
+
+        <aside class="register-card status-card">
+            <h2>About Login</h2>
+            <p>Sign in to:</p>
+            <ul class="status-list" style="list-style: none; padding: 0;">
+                <li style="margin-bottom: 0.75rem;">
+                    <strong>📋 View Order History</strong><br />
+                    <span class="small text-muted">See all your past orders and their status</span>
+                </li>
+                <li style="margin-bottom: 0.75rem;">
+                    <strong>👤 Manage Profile</strong><br />
+                    <span class="small text-muted">Update your delivery address and contact info</span>
+                </li>
+                <li style="margin-bottom: 0;">
+                    <strong>🔐 Change Password</strong><br />
+                    <span class="small text-muted">Keep your account secure with a strong password</span>
+                </li>
+            </ul>
+        </aside>
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private bool isBusy;
+    private string? successMessage;
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        CustomerSession.OnChange += HandleSessionChanged;
+    }
+
+    private async Task LoginAsync()
+    {
+        isBusy = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            var customer = await ShopApiService.LoginAsync(loginRequest);
+            CustomerSession.SetCurrentCustomer(customer);
+            successMessage = $"Welcome back, {customer.Name}!";
+            loginRequest = new();
+
+            // Redirect to register/profile page after successful login
+            await Task.Delay(1000);
+            NavigationManager.NavigateTo("/register");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private Task LogoutAsync()
+    {
+        CustomerSession.SetCurrentCustomer(null);
+        successMessage = "You have been signed out.";
+        loginRequest = new();
+        return Task.CompletedTask;
+    }
+
+#pragma warning disable RZ10012
+    private void HandleSessionChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+#pragma warning restore RZ10012
+
+    public void Dispose()
+    {
+        CustomerSession.OnChange -= HandleSessionChanged;
+    }
+}

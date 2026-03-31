@@ -58,7 +58,7 @@ loading="lazy" />
      <div class="mt-auto">
        <div class="d-flex justify-content-between align-items-center">
      <span class="h5 mb-0 text-primary">@product.Price.ToString("C")</span>
-             <button class="btn btn-sm btn-outline-primary">View Details</button>
+             <button class="btn btn-sm btn-outline-primary" @onclick="() => NavigateToProductDetails(product.Id)">View Details</button>
         </div>
         </div>
 </div>
@@ -99,6 +99,11 @@ catch (Exception ex)
     private void NavigateToProducts()
     {
         NavigationManager.NavigateTo("/products");
+    }
+
+    private void NavigateToProductDetails(int productId)
+    {
+        NavigationManager.NavigateTo($"/products/{productId}");
     }
 
     private void AddToCart(Product product)

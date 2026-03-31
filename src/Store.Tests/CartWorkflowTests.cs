@@ -1,8 +1,12 @@
 using Bunit;
+using System.Net.Http.Json;
 using DataEntities;
 using FluentAssertions;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using Store.Components.Pages;
 using Store.Services;
 using Xunit;
@@ -134,16 +138,114 @@ public class CartWorkflowTests : TestContext
         var product = new Product { Id = 7, Name = "Flow Product", Price = 12.34m };
         cartService.AddItem(product, 2);
 
+        var customer = new CustomerProfile
+        {
+            Id = 11,
+            Name = "Taylor Example",
+            Email = "taylor@example.com",
+            Address = "1 Test Street"
+        };
+
+        var shopApiService = new Mock<IShopApiService>();
+        shopApiService
+            .Setup(service => service.PlaceOrderAsync(customer.Id, It.IsAny<IReadOnlyCollection<CartItem>>()))
+            .ReturnsAsync(new Order { Id = 123, CustomerId = customer.Id, Status = OrderStatuses.Completed, Total = 24.68m });
+
+        var customerSession = new CustomerSessionService(shopApiService.Object);
+        customerSession.SetCurrentCustomer(customer);
+
         Services.AddScoped<CartService>(_ => cartService);
+        Services.AddSingleton<IShopApiService>(shopApiService.Object);
+        Services.AddScoped<CustomerSessionService>(_ => customerSession);
+
         var navigationManager = Services.GetRequiredService<NavigationManager>();
 
         // Act
         var cut = RenderComponent<Checkout>();
-        cut.Find("button[type='submit']").Click();
+        cut.FindAll("button").Single(button => button.TextContent.Contains("Place order")).Click();
 
         // Assert
-        cartService.GetItems().Should().BeEmpty();
-        cartService.GetTotal().Should().Be(0m);
-        navigationManager.Uri.Should().EndWith("/order-confirmation");
+        cut.WaitForAssertion(() =>
+        {
+            cartService.GetItems().Should().BeEmpty();
+            cartService.GetTotal().Should().Be(0m);
+            navigationManager.Uri.Should().EndWith("/order-confirmation?orderId=123");
+        });
+    }
+
+    [Fact]
+    public void HomePage_ViewDetails_NavigatesToDedicatedProductPage()
+    {
+        // Arrange
+        var products = new List<Product>
+        {
+            new() { Id = 1, Name = "Solar Powered Flashlight", Description = "Compact trail light", Details = "Extended flashlight details", Price = 19.99m, ImageUrl = "images/product1.png" },
+            new() { Id = 2, Name = "Hiking Poles", Description = "Trail support", Details = "Pole details", Price = 24.99m, ImageUrl = "images/product2.png" },
+            new() { Id = 3, Name = "Camping Lantern", Description = "Camp light", Details = "Lantern details", Price = 19.99m, ImageUrl = "images/product3.png" }
+        };
+        RegisterProductService(products);
+
+        // Act
+        var navigationManager = Services.GetRequiredService<NavigationManager>();
+        var cut = RenderComponent<Home>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Solar Powered Flashlight"));
+        cut.FindAll("button").First(button => button.TextContent.Trim() == "View Details").Click();
+
+        // Assert
+        navigationManager.Uri.Should().EndWith("/products/1");
+    }
+
+    [Fact]
+    public void ProductsPage_DetailsButton_NavigatesToDedicatedProductPage()
+    {
+        // Arrange
+        var products = new List<Product>
+        {
+            new() { Id = 1, Name = "Solar Powered Flashlight", Description = "Compact trail light", Details = "Extended flashlight details", Price = 19.99m, ImageUrl = "images/product1.png" },
+            new() { Id = 2, Name = "Hiking Poles", Description = "Trail support", Details = "Pole details", Price = 24.99m, ImageUrl = "images/product2.png" }
+        };
+        RegisterProductService(products);
+
+        // Act
+        var navigationManager = Services.GetRequiredService<NavigationManager>();
+        var cut = RenderComponent<Products>();
+        cut.WaitForAssertion(() => cut.Markup.Should().Contain("Solar Powered Flashlight"));
+        cut.FindAll("button").First(button => button.TextContent.Trim() == "Details").Click();
+
+        // Assert
+        navigationManager.Uri.Should().EndWith("/products/1");
+    }
+
+    private void RegisterProductService(List<Product> products)
+    {
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = JsonContent.Create(products)
+        });
+
+        Services.AddMemoryCache();
+        Services.AddSingleton<ProductService>(_ => new ProductService(
+            new HttpClient(handler) { BaseAddress = new Uri("https://localhost:7130") },
+            new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ProductBrowserEndpoint"] = "https://localhost:7130"
+            }).Build(),
+            _.GetRequiredService<IMemoryCache>()));
+        Services.AddScoped<CartService>(_ => new CartService());
+    }
+
+    private sealed class StubHttpMessageHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> responseFactory;
+
+        public StubHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory)
+        {
+            this.responseFactory = responseFactory;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(responseFactory(request));
+        }
     }
 }

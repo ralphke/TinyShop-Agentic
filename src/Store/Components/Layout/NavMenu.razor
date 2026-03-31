@@ -1,5 +1,6 @@
-﻿@using Store.Services
+@using Store.Services
 @inject CartService CartService
+@inject CustomerSessionService CustomerSession
 @implements IDisposable
 
 <div class="top-row ps-3 navbar navbar-dark">
@@ -24,8 +25,37 @@
             </NavLink>
         </div>
 
+        @if (CustomerSession.CurrentCustomer is null)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="register">
+                    <span class="bi bi-person-plus-fill" aria-hidden="true"></span> Register
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-door-closed" aria-hidden="true"></span> Sign In
+                </NavLink>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="register">
+                    <span class="bi bi-person-fill" aria-hidden="true"></span> Account
+                </NavLink>
+            </div>
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="order-history">
+                    <span class="bi bi-receipt" aria-hidden="true"></span> Order History
+                </NavLink>
+            </div>
+        }
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="checkout">
+            <NavLink class="nav-link" href="cart">
                 <span class="bi bi-cart-fill" aria-hidden="true"></span> Cart
                 @if (CartService.GetItemCount() > 0)
                 {
@@ -45,12 +75,13 @@
 @code {
     protected override void OnInitialized()
     {
+        CustomerSession.OnChange += StateHasChanged;
         CartService.OnChange += StateHasChanged;
     }
 
     public void Dispose()
     {
+        CustomerSession.OnChange -= StateHasChanged;
         CartService.OnChange -= StateHasChanged;
     }
 }
-

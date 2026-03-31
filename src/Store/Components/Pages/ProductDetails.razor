@@ -1,0 +1,149 @@
+@page "/products/{ProductId:int}"
+@rendermode InteractiveServer
+@using Store.Services
+@inject ProductService ProductService
+@inject NavigationManager NavigationManager
+@inject Store.Services.CartService CartService
+
+<PageTitle>@(product?.Name is null ? "Product Details - TinyShop" : $"{product.Name} - TinyShop")</PageTitle>
+
+<div class="product-details-shell">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading product...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading product details...</p>
+        </div>
+    }
+    else if (errorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Unable to load product details</h4>
+            <p class="mb-0">@errorMessage</p>
+        </div>
+    }
+    else if (product is null)
+    {
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Product not found</h4>
+            <p class="mb-0">The product you requested could not be found.</p>
+        </div>
+    }
+    else
+    {
+        <div class="details-header">
+            <button type="button" class="btn btn-outline-secondary" @onclick="NavigateBackToProducts">Back to products</button>
+            @if (lastAddedProduct is not null)
+            {
+                <div class="alert alert-success details-alert" role="alert">
+                    <strong>@lastAddedProduct</strong> added to cart. <a href="/cart" class="alert-link">Open cart</a>
+                </div>
+            }
+        </div>
+
+        <div class="details-layout">
+            <section class="details-main-card">
+                <div class="details-main-copy">
+                    <p class="details-eyebrow">Outdoor gear spotlight</p>
+                    <h1>@product.Name</h1>
+                    <p class="details-summary">@product.Description</p>
+                    <div class="details-price-row">
+                        <span class="details-price">@product.Price.ToString("C")</span>
+                        <button type="button" class="btn btn-primary" @onclick="() => AddToCart(product)">Add to cart</button>
+                    </div>
+                </div>
+
+                <div class="details-image-frame">
+                    <img src="@ProductService.GetImageUrl(product)" alt="@product.Name" class="details-image" loading="lazy" />
+                </div>
+            </section>
+
+            <div class="details-grid">
+                <section class="details-panel">
+                    <h2>Why this product works</h2>
+                    <p>@product.Details</p>
+                </section>
+
+                <aside class="details-panel details-side-panel">
+                    <h2>Pairs well with</h2>
+                    @if (recommendedProducts.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No companion products available for this item yet.</p>
+                    }
+                    else
+                    {
+                        <div class="related-products">
+                            @foreach (var relatedProduct in recommendedProducts)
+                            {
+                                <button type="button" class="related-product-card" @onclick="() => NavigateToProduct(relatedProduct.Id)">
+                                    <span>@relatedProduct.Name</span>
+                                    <strong>@relatedProduct.Price.ToString("C")</strong>
+                                </button>
+                            }
+                        </div>
+                    }
+                </aside>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int ProductId { get; set; }
+
+    private Product? product;
+    private List<Product> recommendedProducts = [];
+    private bool isLoading = true;
+    private string? errorMessage;
+    private string? lastAddedProduct;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        product = null;
+        recommendedProducts = [];
+
+        try
+        {
+            product = await ProductService.GetProductByIdAsync(ProductId);
+
+            if (product is not null)
+            {
+                var allProducts = await ProductService.GetProducts();
+                recommendedProducts = ProductRecommendations.GetFor(product, allProducts);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Failed to connect to Products API: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void AddToCart(Product selectedProduct)
+    {
+        CartService.AddItem(selectedProduct, 1);
+        lastAddedProduct = selectedProduct.Name;
+    }
+
+    private void NavigateBackToProducts()
+    {
+        NavigationManager.NavigateTo("/products");
+    }
+
+    private void NavigateToProduct(int productId)
+    {
+        NavigationManager.NavigateTo($"/products/{productId}");
+    }
+}

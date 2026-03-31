@@ -2,13 +2,13 @@
 -- Run this script in SSMS or sqlcmd connected to (localdb)\MSSQLLocalDB
 
 -- 1. Create the database
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'TestDB')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'TineShopDB')
 BEGIN
-    CREATE DATABASE TestDB;
+    CREATE DATABASE TineShopDB;
 END
 GO
 
-USE TestDB;
+USE TineShopDB;
 GO
 
 -- 2. Create SQL Server login and user for the application
@@ -24,7 +24,7 @@ END
 GO
 
 -- Create database user mapped to the login
-USE TestDB;
+USE TineShopDB;
 GO
 
 IF NOT EXISTS (SELECT name FROM sys.database_principals WHERE name = 'TinyShopUser')
@@ -84,5 +84,5 @@ GO
 -- Alternatively, load images via application code
 
 PRINT 'Database setup completed successfully.';
-PRINT 'Connection String: Server=(localdb)\MSSQLLocalDB;Database=TestDB;User Id=TinyShopUser;Password=P@ssw0rd123!;TrustServerCertificate=True;';
+PRINT 'Connection String: Server=(localdb)\MSSQLLocalDB;Database=TineShopDB;User Id=TinyShopUser;Password=P@ssw0rd123!;TrustServerCertificate=True;';
 GO

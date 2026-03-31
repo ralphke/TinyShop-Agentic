@@ -1,0 +1,158 @@
+@page "/order-history"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Web
+@inject Store.Services.CustomerSessionService CustomerSession
+@inject Store.Services.IShopApiService ShopApiService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>Order History - TinyShop</PageTitle>
+
+<div class="register-shell">
+    <div class="register-header">
+        <div>
+            <h1>Order History</h1>
+            <p class="text-muted mb-0">View your past orders and track their status.</p>
+        </div>
+        <a href="/cart" class="btn btn-outline-primary">View Cart</a>
+    </div>
+
+    @if (CustomerSession.CurrentCustomer is null)
+    {
+        <div class="alert alert-warning">
+            <p class="mb-0">Please <a href="/login">sign in</a> to view your order history.</p>
+        </div>
+    }
+    else
+    {
+        @if (isLoading)
+        {
+            <div class="alert alert-info">Loading your orders...</div>
+        }
+        else if (errorMessage is not null)
+        {
+            <div class="alert alert-danger" role="alert">@errorMessage</div>
+        }
+        else if (orders.Count == 0)
+        {
+            <div class="alert alert-info">
+                <p class="mb-0">You haven't placed any orders yet. <a href="/products">Start shopping!</a></p>
+            </div>
+        }
+        else
+        {
+            <div class="register-card">
+                <h2>Your Orders</h2>
+                
+                @foreach (var order in orders)
+                {
+                    <div class="order-item" style="margin-bottom: 2rem; padding: 1rem; border: 1px solid #e0e0e0; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem;">Order #@order.Id</h3>
+                                <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                                    Placed on @order.CreatedDate.ToString("MMMM d, yyyy 'at' h:mm tt")
+                                </p>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="display: inline-block; padding: 0.25rem 0.75rem; background-color: #f0f0f0; border-radius: 4px; font-size: 0.9rem;">
+                                    @order.Status
+                                </span>
+                                <p style="margin: 0.5rem 0 0 0; font-weight: bold; font-size: 1.2rem;">
+                                    @order.Total.ToString("C")
+                                </p>
+                            </div>
+                        </div>
+
+                        <h4 style="margin: 1rem 0 0.5rem 0; font-size: 1rem;">Items:</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #e0e0e0;">
+                                    <th style="text-align: left; padding: 0.5rem 0;">Product</th>
+                                    <th style="text-align: center; padding: 0.5rem 0;">Qty</th>
+                                    <th style="text-align: right; padding: 0.5rem 0;">Price</th>
+                                    <th style="text-align: right; padding: 0.5rem 0;">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in order.Items)
+                                {
+                                    <tr style="border-bottom: 1px solid #f0f0f0;">
+                                        <td style="padding: 0.5rem 0;">@item.ProductName</td>
+                                        <td style="text-align: center; padding: 0.5rem 0;">@item.Quantity</td>
+                                        <td style="text-align: right; padding: 0.5rem 0;">@item.UnitPrice.ToString("C")</td>
+                                        <td style="text-align: right; padding: 0.5rem 0; font-weight: bold;">@((item.UnitPrice * item.Quantity).ToString("C"))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 1rem; padding-top: 1rem; text-align: right; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0.5rem 0;">
+                                <strong>Shipping Address:</strong> @order.ShippingAddress
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="register-actions" style="margin-top: 1rem;">
+            <a href="/register" class="btn btn-outline-primary">Edit Account</a>
+            <a href="/products" class="btn btn-primary">Continue Shopping</a>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Order> orders = [];
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CustomerSession.OnChange += HandleSessionChanged;
+
+        if (CustomerSession.CurrentCustomer is null)
+        {
+            isLoading = false;
+            return;
+        }
+
+        await LoadOrdersAsync();
+    }
+
+    private async Task LoadOrdersAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            if (CustomerSession.CurrentCustomer is not null)
+            {
+                orders = await ShopApiService.GetCustomerOrdersAsync(CustomerSession.CurrentCustomer.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void HandleSessionChanged()
+    {
+#pragma warning disable RZ10012
+        _ = InvokeAsync(() => OnInitializedAsync());
+#pragma warning restore RZ10012
+    }
+
+    public void Dispose()
+    {
+        CustomerSession.OnChange -= HandleSessionChanged;
+    }
+}

@@ -3,7 +3,7 @@
 -- NOTE: This requires OPENROWSET which needs special permissions and may not work in all environments
 -- For production, use the API endpoint PUT /api/Product/{id}/image instead
 
-USE TestDB;
+USE TineShopDB;
 GO
 
 -- Enable advanced options (requires sysadmin or appropriate permissions)

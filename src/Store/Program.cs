@@ -1,38 +1,52 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Components.Server.Circuits;
+using Microsoft.AspNetCore.Localization;
 using Store.Components;
 using Store.Services;
-using Microsoft.AspNetCore.Components.Server.Circuits;
 
 var builder = WebApplication.CreateBuilder(args);
 var enableHttpsRedirection = builder.Configuration.GetValue("EnableHttpsRedirection", true);
+var productEndpoint = builder.Configuration["ProductEndpoint"] ?? "https://localhost:7130";
+var cultureName = builder.Configuration["Localization:DefaultCulture"] ?? "en-IE";
+var defaultCulture = CreateDefaultCulture(cultureName);
+
+CultureInfo.DefaultThreadCurrentCulture = defaultCulture;
+CultureInfo.DefaultThreadCurrentUICulture = defaultCulture;
 
 builder.AddServiceDefaults();
 
-// Register ProductService as an HTTP typed client so injected HttpClient is configured from configuration
-// (do not register as a separate singleton which conflicts with AddHttpClient).
-builder.Services.AddHttpClient<ProductService>(c =>
+builder.Services.AddHttpClient<ProductService>(client =>
 {
-    var url = builder.Configuration["ProductEndpoint"] ?? "https://localhost:7130";
-    c.BaseAddress = new(url);
+    client.BaseAddress = new Uri(productEndpoint);
 });
 
-// Add cart service (scoped to Blazor circuit) and circuit handler
+builder.Services.AddHttpClient<IShopApiService, ShopApiService>(client =>
+{
+    client.BaseAddress = new Uri(productEndpoint);
+});
+
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<CustomerSessionService>();
 builder.Services.AddSingleton<CircuitHandler, CartCircuitHandler>();
 
-// Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
+    SupportedCultures = [defaultCulture],
+    SupportedUICultures = [defaultCulture]
+});
+
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
@@ -44,11 +58,22 @@ if (enableHttpsRedirection)
 app.UseStaticFiles();
 app.UseAntiforgery();
 
-
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+static CultureInfo CreateDefaultCulture(string cultureName)
+{
+    try
+    {
+        return CultureInfo.GetCultureInfo(cultureName);
+    }
+    catch (CultureNotFoundException)
+    {
+        return CultureInfo.GetCultureInfo("en-IE");
+    }
+}
 
 namespace Store
 {

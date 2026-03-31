@@ -1,82 +1,124 @@
+@page "/cart"
 @page "/checkout"
 @rendermode InteractiveServer
 @using DataEntities
 @inject NavigationManager NavigationManager
 @inject Store.Services.CartService CartService
+@inject Store.Services.CustomerSessionService CustomerSession
+@inject Store.Services.IShopApiService ShopApiService
+@implements IDisposable
 
-<PageTitle>Checkout - TinyShop</PageTitle>
+<PageTitle>Cart - TinyShop</PageTitle>
 
-<div class="container-fluid">
-    <h1>Checkout</h1>
-
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <h5>Shipping Information</h5>
-                    <EditForm Model="customer" OnValidSubmit="PlaceOrder">
-                        <DataAnnotationsValidator />
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Full Name</label>
-                            <InputText id="name" class="form-control" @bind-Value="customer.Name" />
-                            <ValidationMessage For="() => customer.Name" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <InputText id="email" class="form-control" @bind-Value="customer.Email" />
-                            <ValidationMessage For="() => customer.Email" />
-                        </div>
-                        <div class="mb-3">
-                            <label for="address" class="form-label">Address</label>
-                            <InputTextArea id="address" class="form-control" @bind-Value="customer.Address" />
-                            <ValidationMessage For="() => customer.Address" />
-                        </div>
-                        <button type="submit" class="btn btn-success">Place Order</button>
-                    </EditForm>
-                </div>
-            </div>
+<div class="cart-shell">
+    <div class="cart-header">
+        <div>
+            <h1>Your cart</h1>
+            <p class="text-muted mb-0">Adjust quantities, remove items, and place your order once you are registered.</p>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5>Order Summary</h5>
-                    @if (!CartService.GetItems().Any())
-                    {
-                        <div class="alert alert-warning">Your cart is empty. <a href="/products">Go back to shopping</a>.</div>
-                    }
-                    else
-                    {
-                        @foreach (var item in CartService.GetItems())
-                        {
-                            <div class="d-flex justify-content-between">
-                                <span>@item.Product.Name (x@item.Quantity)</span>
-                                <span>@(item.Product.Price * item.Quantity).ToString("C")</span>
+        <a href="/products" class="btn btn-outline-primary">Continue shopping</a>
+    </div>
+
+    @if (errorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+
+    <div class="cart-grid">
+        <section class="cart-card">
+            @if (!CartService.GetItems().Any())
+            {
+                <div class="alert alert-warning mb-0">Your cart is empty. <a href="/products">Go back to shopping</a>.</div>
+            }
+            else
+            {
+                @foreach (var item in CartService.GetItems())
+                {
+                    <div class="cart-line">
+                        <div class="cart-line-copy">
+                            <h2>@item.Product.Name</h2>
+                            <p>@item.Product.Description</p>
+                            <span class="line-price">@item.Product.Price.ToString("C") each</span>
+                        </div>
+
+                        <div class="cart-line-actions">
+                            <div class="quantity-controls">
+                                <button type="button" class="btn btn-outline-secondary" @onclick="() => DecreaseQuantity(item.Product.Id)" disabled="@isBusy">-</button>
+                                <span class="quantity-value">@item.Quantity</span>
+                                <button type="button" class="btn btn-outline-secondary" @onclick="() => IncreaseQuantity(item.Product)" disabled="@isBusy">+</button>
                             </div>
-                        }
-                        <hr />
-                        <div class="d-flex justify-content-between">
-                            <strong>Total</strong>
-                            <strong>@CartService.GetTotal().ToString("C")</strong>
+                            <strong>@((item.Product.Price * item.Quantity).ToString("C"))</strong>
+                            <button type="button" class="btn btn-outline-danger btn-sm" @onclick="() => RemoveItem(item.Product.Id)" disabled="@isBusy">Remove item</button>
                         </div>
-                        <div class="mt-2">
-                            <button class="btn btn-sm btn-outline-danger me-2" @onclick="ClearCart">Clear Cart</button>
-                        </div>
-                    }
-                </div>
+                    </div>
+                }
+            }
+        </section>
+
+        <aside class="cart-card summary-card">
+            <h2>Order summary</h2>
+            <div class="summary-row">
+                <span>Items</span>
+                <strong>@CartService.GetItemCount()</strong>
             </div>
-        </div>
+            <div class="summary-row total-row">
+                <span>Total</span>
+                <strong>@CartService.GetTotal().ToString("C")</strong>
+            </div>
+
+            @if (CustomerSession.CurrentCustomer is null)
+            {
+                <div class="alert alert-info mt-3 mb-3">You need to have registered to place an order.</div>
+                <a href="/register" class="btn btn-primary w-100">Register or Sign In</a>
+            }
+            else
+            {
+                <div class="customer-summary">
+                    <h3>Registered customer</h3>
+                    <p class="mb-1"><strong>@CustomerSession.CurrentCustomer.Name</strong></p>
+                    <p class="mb-1">@CustomerSession.CurrentCustomer.Email</p>
+                    <p class="mb-0">@CustomerSession.CurrentCustomer.Address</p>
+                </div>
+
+                <div class="summary-actions">
+                    <a href="/register" class="btn btn-outline-primary">Edit details</a>
+                    <button type="button" class="btn btn-success" @onclick="PlaceOrderAsync" disabled="@(!CanPlaceOrder)">Place order</button>
+                </div>
+            }
+
+            @if (CartService.GetItems().Any())
+            {
+                <button type="button" class="btn btn-outline-danger w-100 mt-3" @onclick="ClearCart" disabled="@isBusy">Clear cart</button>
+            }
+        </aside>
     </div>
 </div>
 
 @code {
-    private Customer customer = new();
+    private bool isBusy;
+    private string? errorMessage;
 
-    private void PlaceOrder()
+    private bool CanPlaceOrder => !isBusy && CartService.GetItems().Any() && CustomerSession.CurrentCustomer is not null;
+
+    protected override void OnInitialized()
     {
-        // Simulate order placement
-        Console.WriteLine($"Order placed for {customer.Name}, Total: {CartService.GetTotal()}");
-        CartService.Clear();
-        NavigationManager.NavigateTo("/order-confirmation");
+        CartService.OnChange += HandleStateChanged;
+        CustomerSession.OnChange += HandleStateChanged;
+    }
+
+    private void IncreaseQuantity(Product product)
+    {
+        CartService.AddItem(product);
+    }
+
+    private void DecreaseQuantity(int productId)
+    {
+        CartService.RemoveItem(productId);
+    }
+
+    private void RemoveItem(int productId)
+    {
+        CartService.RemoveAll(productId);
     }
 
     private void ClearCart()
@@ -84,10 +126,40 @@
         CartService.Clear();
     }
 
-    public class Customer
+    private async Task PlaceOrderAsync()
     {
-        public string Name { get; set; } = "";
-        public string Email { get; set; } = "";
-        public string Address { get; set; } = "";
+        if (CustomerSession.CurrentCustomer is null || !CartService.GetItems().Any())
+        {
+            return;
+        }
+
+        isBusy = true;
+        errorMessage = null;
+
+        try
+        {
+            var order = await ShopApiService.PlaceOrderAsync(CustomerSession.CurrentCustomer.Id, CartService.GetItems());
+            CartService.Clear();
+            NavigationManager.NavigateTo($"/order-confirmation?orderId={order.Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async void HandleStateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        CartService.OnChange -= HandleStateChanged;
+        CustomerSession.OnChange -= HandleStateChanged;
     }
 }

@@ -107,6 +107,7 @@ p.ImageUrl,
 
      product.Name = updatedProduct.Name;
             product.Description = updatedProduct.Description;
+           product.Details = updatedProduct.Details;
   product.Price = updatedProduct.Price;
         product.ImageUrl = updatedProduct.ImageUrl;
  

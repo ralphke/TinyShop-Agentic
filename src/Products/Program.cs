@@ -9,7 +9,7 @@ builder.AddServiceDefaults();
 
 // Configure SQL Server connection
 var connectionString = builder.Configuration.GetConnectionString("ProductsDb") 
-    ?? "Server=(localdb)\\MSSQLLocalDB;Database=TestDB;Integrated Security=true;TrustServerCertificate=True;";
+    ?? "Server=(localdb)\\MSSQLLocalDB;Database=TineShopDB;Integrated Security=true;TrustServerCertificate=True;";
 
 builder.Services.AddDbContext<ProductDataContext>(options =>
 {
@@ -52,6 +52,7 @@ app.UseCors("AllowBlazorClient");
 app.UseStaticFiles();
 
 app.MapProductEndpoints();
+app.MapCustomerOrderEndpoints();
 
 // Initialize database and seed data if needed
 await app.InitializeDatabaseAsync();

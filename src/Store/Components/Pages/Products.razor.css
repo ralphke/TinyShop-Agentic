@@ -1,38 +1,35 @@
-.product-grid {
+.products-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 2rem;
-    margin-top: 1.5rem;
     max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
     padding: 1rem 0;
 }
 
 /* Responsive adjustments for different screen sizes */
 @media (max-width: 1400px) {
-    .product-grid {
+    .products-grid {
      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
     }
 }
 
 @media (max-width: 992px) {
-    .product-grid {
+    .products-grid {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.25rem;
     }
 }
 
 @media (max-width: 768px) {
-    .product-grid {
+    .products-grid {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
     }
 }
 
 @media (max-width: 576px) {
-    .product-grid {
+    .products-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
@@ -100,6 +97,10 @@ width: 100%;
     flex: 1;
 }
 
+.product-copy {
+    flex: 1;
+}
+
 .product-name {
     margin: 0;
     font-size: 1.25rem;
@@ -138,6 +139,15 @@ width: 100%;
     gap: 0.5rem;
 }
 
+.product-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+}
+
 /* Make buttons stack on very small screens */
 @media (max-width: 400px) {
     .product-footer {
@@ -148,6 +158,12 @@ width: 100%;
     .product-price {
 text-align: center;
         margin-bottom: 0.5rem;
+    }
+
+    .product-actions,
+    .product-footer .btn {
+        width: 100%;
+        justify-content: stretch;
     }
 }
 
@@ -164,3 +180,4 @@ text-align: center;
      padding-right: 2rem;
     }
 }
+

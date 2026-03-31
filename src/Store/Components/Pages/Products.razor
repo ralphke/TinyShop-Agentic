@@ -17,7 +17,7 @@
     @if (lastAddedProduct is not null)
     {
         <div class="alert alert-success alert-dismissible" role="alert">
-            <strong>@lastAddedProduct</strong> added to cart! <a href="/checkout" class="alert-link">View cart</a>
+            <strong>@lastAddedProduct</strong> added to cart! <a href="/cart" class="alert-link">View cart</a>
             <button type="button" class="btn-close" @onclick="() => lastAddedProduct = null" aria-label="Close"></button>
         </div>
     }
@@ -67,23 +67,28 @@
         <div class="products-grid">
             @foreach (var product in products)
             {
-                <div class="product-card">
+                <article class="product-card">
                     <div class="product-image-container">
-                        <img src="@ProductService.GetImageUrl(product)" 
-                             alt="@product.Name" 
+                        <img src="@ProductService.GetImageUrl(product)"
+                             alt="@product.Name"
                              class="product-image"
                              loading="lazy"
                              onerror="this.onerror=null; this.style.border='2px solid red'; this.title='Image failed to load'" />
                     </div>
                     <div class="product-details">
-                        <h3 class="product-name">@product.Name</h3>
-                        <p class="product-description">@product.Description</p>
+                        <div class="product-copy">
+                            <h3 class="product-name">@product.Name</h3>
+                            <p class="product-description">@product.Description</p>
+                        </div>
                         <div class="product-footer">
                             <span class="product-price">@product.Price.ToString("C")</span>
-                            <button class="btn btn-primary btn-sm" @onclick="() => AddToCart(product)">Add to cart</button>
+                            <div class="product-actions">
+                                <button class="btn btn-outline-primary btn-sm" @onclick="() => NavigateToProductDetails(product.Id)">Details</button>
+                                <button class="btn btn-primary btn-sm" @onclick="() => AddToCart(product)">Add to cart</button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </article>
             }
         </div>
     }
@@ -94,7 +99,6 @@
     private List<Product> products = new();
     private bool isLoading = true;
     private string? errorMessage;
-    
     private string? lastAddedProduct;
 
     private void AddToCart(Product product)
@@ -107,7 +111,7 @@
     {
         try
         {
-            products = await ProductService.GetProductsPageAsync(9);
+            products = await ProductService.GetProducts();
         }
         catch (HttpRequestException ex)
         {
@@ -125,5 +129,9 @@
         }
     }
 
+    private void NavigateToProductDetails(int productId)
+    {
+        NavigationManager.NavigateTo($"/products/{productId}");
+    }
 
 }

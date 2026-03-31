@@ -1,0 +1,282 @@
+@page "/register"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Web
+@inject Store.Services.CustomerSessionService CustomerSession
+@inject Store.Services.IShopApiService ShopApiService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>Register - TinyShop</PageTitle>
+
+<div class="register-shell">
+    <div class="register-header">
+        <div>
+            <h1>Create Account</h1>
+            <p class="text-muted mb-0">Register or update your details. Your password will be securely stored.</p>
+        </div>
+        <a href="/cart" class="btn btn-outline-primary">View Cart</a>
+    </div>
+
+    @if (successMessage is not null)
+    {
+        <div class="alert alert-success" role="alert">@successMessage</div>
+    }
+
+    @if (errorMessage is not null)
+    {
+        <div class="alert alert-danger" role="alert">@errorMessage</div>
+    }
+
+    <div class="register-grid">
+        <section class="register-card">
+            @if (!showPasswordChange)
+            {
+                <h2>@(CustomerSession.CurrentCustomer is null ? "Register" : "Edit Account")</h2>
+                <EditForm Model="registerRequest" OnValidSubmit="RegisterAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label for="register-name" class="form-label">Full name</label>
+                        <InputText id="register-name" class="form-control" @bind-Value="registerRequest.Name" />
+                        <ValidationMessage For="() => registerRequest.Name" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="register-email" class="form-label">Email</label>
+                        <InputText id="register-email" class="form-control" @bind-Value="registerRequest.Email" />
+                        <ValidationMessage For="() => registerRequest.Email" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="register-address" class="form-label">Address</label>
+                        <InputTextArea id="register-address" class="form-control" @bind-Value="registerRequest.Address" />
+                        <ValidationMessage For="() => registerRequest.Address" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="register-password" class="form-label">Password <span class="text-muted">(min. 8 characters)</span></label>
+                        <InputText id="register-password" class="form-control" type="password" @bind-Value="registerRequest.Password" />
+                        <ValidationMessage For="() => registerRequest.Password" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="register-confirm" class="form-label">Confirm Password</label>
+                        <InputText id="register-confirm" class="form-control" type="password" @bind-Value="registerRequest.ConfirmPassword" />
+                        <ValidationMessage For="() => registerRequest.ConfirmPassword" />
+                    </div>
+
+                    <div class="register-actions">
+                        <button type="submit" class="btn btn-primary" disabled="@isBusy">
+                            @(CustomerSession.CurrentCustomer is null ? "Register" : "Update Account")
+                        </button>
+                        @if (CustomerSession.CurrentCustomer is not null)
+                        {
+                            <button type="button" class="btn btn-outline-warning" @onclick="ShowPasswordChange" disabled="@isBusy">Change Password</button>
+                            <button type="button" class="btn btn-outline-danger" @onclick="DeleteAsync" disabled="@isBusy">Delete Account</button>
+                        }
+                    </div>
+                </EditForm>
+            }
+            else
+            {
+                <h2>Change Password</h2>
+                <EditForm Model="changePasswordRequest" OnValidSubmit="ChangePasswordAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label for="current-password" class="form-label">Current Password</label>
+                        <InputText id="current-password" class="form-control" type="password" @bind-Value="changePasswordRequest.CurrentPassword" />
+                        <ValidationMessage For="() => changePasswordRequest.CurrentPassword" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="new-password" class="form-label">New Password</label>
+                        <InputText id="new-password" class="form-control" type="password" @bind-Value="changePasswordRequest.NewPassword" />
+                        <ValidationMessage For="() => changePasswordRequest.NewPassword" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="confirm-new-password" class="form-label">Confirm New Password</label>
+                        <InputText id="confirm-new-password" class="form-control" type="password" @bind-Value="changePasswordRequest.ConfirmPassword" />
+                        <ValidationMessage For="() => changePasswordRequest.ConfirmPassword" />
+                    </div>
+
+                    <div class="register-actions">
+                        <button type="submit" class="btn btn-primary" disabled="@isBusy">Change Password</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="HidePasswordChange" disabled="@isBusy">Cancel</button>
+                    </div>
+                </EditForm>
+            }
+        </section>
+
+        <aside class="register-card status-card">
+            <h2>Account Status</h2>
+            @if (CustomerSession.CurrentCustomer is null)
+            {
+                <p class="text-muted">You haven't registered yet.</p>
+                <p class="small text-muted mb-0">Create an account to place orders and view your order history.</p>
+            }
+            else
+            {
+                <dl class="status-list">
+                    <dt>Name</dt>
+                    <dd>@CustomerSession.CurrentCustomer.Name</dd>
+
+                    <dt>Email</dt>
+                    <dd>@CustomerSession.CurrentCustomer.Email</dd>
+
+                    <dt>Address</dt>
+                    <dd>@CustomerSession.CurrentCustomer.Address</dd>
+
+                    <dt>Member Since</dt>
+                    <dd>@CustomerSession.CurrentCustomer.CreatedDate.ToString("MMMM d, yyyy")</dd>
+                </dl>
+
+                <div class="mt-3">
+                    <a href="/order-history" class="btn btn-outline-primary w-100">View Order History</a>
+                </div>
+
+                <p class="small text-muted mb-0 mt-3">Your password is stored using industry-standard hashing, and your data is protected in transit.</p>
+            }
+        </aside>
+    </div>
+</div>
+
+@code {
+    private RegisterRequest registerRequest = new();
+    private ChangePasswordRequest changePasswordRequest = new();
+    private bool isBusy;
+    private bool showPasswordChange;
+    private string? successMessage;
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        SyncFormFromSession();
+        CustomerSession.OnChange += HandleSessionChanged;
+    }
+
+    private async Task RegisterAsync()
+    {
+        isBusy = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            var customer = await ShopApiService.RegisterAsync(registerRequest);
+            CustomerSession.SetCurrentCustomer(customer);
+            successMessage = CustomerSession.CurrentCustomer?.Name is not null
+                ? $"Welcome, {CustomerSession.CurrentCustomer.Name}! Your account has been created."
+                : "Registration successful!";
+            registerRequest = new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task ChangePasswordAsync()
+    {
+        if (CustomerSession.CurrentCustomer is null)
+        {
+            return;
+        }
+
+        isBusy = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            await ShopApiService.ChangePasswordAsync(CustomerSession.CurrentCustomer.Id, changePasswordRequest);
+            successMessage = "Password changed successfully.";
+            changePasswordRequest = new();
+            showPasswordChange = false;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (CustomerSession.CurrentCustomer is null)
+        {
+            return;
+        }
+
+        isBusy = true;
+        successMessage = null;
+        errorMessage = null;
+
+        try
+        {
+            await ShopApiService.DeleteCustomerAsync(CustomerSession.CurrentCustomer.Id);
+            CustomerSession.SetCurrentCustomer(null);
+            successMessage = "Your account has been deleted.";
+            registerRequest = new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void ShowPasswordChange()
+    {
+        showPasswordChange = true;
+        changePasswordRequest = new();
+    }
+
+    private void HidePasswordChange()
+    {
+        showPasswordChange = false;
+        changePasswordRequest = new();
+    }
+
+#pragma warning disable RZ10012
+    private void HandleSessionChanged()
+    {
+        SyncFormFromSession();
+        _ = InvokeAsync(StateHasChanged);
+    }
+#pragma warning restore RZ10012
+
+    private void SyncFormFromSession()
+    {
+        if (CustomerSession.CurrentCustomer is null)
+        {
+            registerRequest = new RegisterRequest();
+            return;
+        }
+
+        registerRequest = new RegisterRequest
+        {
+            Name = CustomerSession.CurrentCustomer.Name,
+            Email = CustomerSession.CurrentCustomer.Email,
+            Address = CustomerSession.CurrentCustomer.Address
+        };
+    }
+
+    public void Dispose()
+    {
+        CustomerSession.OnChange -= HandleSessionChanged;
+    }
+}

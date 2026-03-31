@@ -1,6 +1,6 @@
-﻿create database TestDB;
+﻿create database TineShopDB;
 go
-use TestDB;
+use TineShopDB;
 go
 
 IF OBJECT_ID('dbo.Products', 'U') IS NOT NULL
