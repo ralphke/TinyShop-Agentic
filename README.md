@@ -35,11 +35,31 @@ The workspace currently includes the following completed updates:
 
 ## Run with Docker Compose
 
-From the repository root:
+The Docker Compose stack uses the SQL Server connection string from `.env`.
+Make sure your `.env` includes the connection string and SA password, for example:
+
+```env
+PRODUCTS_DB_CONNECTION_STRING=Server=sqlserver,1433;Database=TinyShopDB;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False;
+MSSQL_SA_PASSWORD=your-sa-password-here
+```
+
+Provision the database before starting the application:
 
 ```bash
+$pw=$(grep MSSQL_SA_PASSWORD .env | cut -d'=' -f2-)
+sqlcmd -S localhost,1433 -U sa -P "$pw" -i src/Products/SQL/Setup.sql
 docker compose up -d --build
 ```
+
+If you prefer to provision against LocalDB instead of the SQL container, use:
+
+```bash
+pw=$(grep MSSQL_SA_PASSWORD .env | cut -d'=' -f2-)
+sqlcmd -S "(localdb)\MSSQLLocalDB" -i src/Products/SQL/Setup.sql -v MSSQL_SA_PASSWORD="$pw"
+```
+
+> Note: the `products` app no longer performs EF Core database creation or seeding at startup. The schema must exist before the service starts.
+
 
 Useful endpoints:
 

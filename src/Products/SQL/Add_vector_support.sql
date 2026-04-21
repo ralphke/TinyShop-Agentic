@@ -1,4 +1,4 @@
--- Adding the vector support to the TineShopDB database involves several steps. 
+-- Adding the vector support to the TinyShopDB database involves several steps. 
 -- Below is a sample SQL script that demonstrates how to enable vector support, add necessary columns, create indexes, and test the integration with an embedding service.
 
 -- 1. Enable support

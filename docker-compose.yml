@@ -1,6 +1,8 @@
 services:
   sqlserver:
-    image: mcr.microsoft.com/mssql/server:2025-latest
+    build:
+      context: .
+      dockerfile: Dockerfile.sqlserver
     container_name: tinyshop-sqlserver
     environment:
       ACCEPT_EULA: Y
@@ -9,6 +11,33 @@ services:
       - "1433:1433"
     volumes:
       - sqlserver-data:/var/opt/mssql
+      - ./src/Products/wwwroot/images:/usr/src/sql/images:ro
+      - ./src/Products/SQL:/usr/src/sql/init:ro
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/1433 && echo '' >&3 && exec 3>&- && echo 'success'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  init-db:
+    build:
+      context: ./src/Products/SQL
+      dockerfile: Dockerfile
+    container_name: tinyshop-sql-init
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      embeddings:
+        condition: service_started
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      EMBEDDINGS_URL: http://embeddings:80/embed
+    volumes:
+      - ./src/Products/SQL:/usr/src/sql/init:ro
+    entrypoint: /bin/bash
+    command: ["/usr/src/sql/init/init-db.sh"]
+    restart: "no"
 
   products:
     build:
@@ -16,12 +45,16 @@ services:
       dockerfile: src/Products/Dockerfile
     container_name: tinyshop-products
     depends_on:
-      - sqlserver
+      init-db:
+        condition: service_completed_successfully
+      embeddings:
+        condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: "8080"
       EnableHttpsRedirection: "false"
-      ConnectionStrings__ProductsDb: Server=sqlserver,1433;Database=TinyShop;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False;
+      ConnectionStrings__ProductsDb: ${PRODUCTS_DB_CONNECTION_STRING}
+      EMBEDDING_SERVICE__ENDPOINT: http://embeddings/embed
     ports:
       - "5228:8080"
     restart: on-failure

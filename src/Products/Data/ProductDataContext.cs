@@ -65,6 +65,12 @@ public class ProductDataContext : DbContext
             entity.Property(e => e.DescriptionEmbedding)
                 .HasColumnType("nvarchar(max)")
                 .IsRequired(false);
+            entity.Property(e => e.NameEmbedding)
+                .HasConversion(embeddingConverter)
+                .Metadata.SetValueComparer(embeddingComparer);
+            entity.Property(e => e.NameEmbedding)
+                .HasColumnType("nvarchar(max)")
+                .IsRequired(false);
         });
 
         modelBuilder.Entity<CustomerProfile>(entity =>
@@ -150,6 +156,9 @@ public class ProductDataContext : DbContext
 public static class Extensions
 {
     public static async Task InitializeDatabaseAsync(this IHost host)
+        => await InitializeDatabaseAsync(host, createIfMissing: true);
+
+    public static async Task InitializeDatabaseAsync(this IHost host, bool createIfMissing)
     {
         using var scope = host.Services.CreateScope();
         var services = scope.ServiceProvider;
@@ -159,7 +168,14 @@ public static class Extensions
 
         try
         {
-            await context.Database.EnsureCreatedAsync();
+            if (createIfMissing)
+            {
+                await context.Database.EnsureCreatedAsync();
+            }
+            else if (!await context.Database.CanConnectAsync())
+            {
+                throw new InvalidOperationException("Database is not available for maintenance.");
+            }
 
             if (context.Database.IsSqlServer())
             {
@@ -186,6 +202,63 @@ public static class Extensions
         }
     }
 
+    public static async Task EnsureDatabaseMaintenanceAsync(this IHost host)
+    {
+        using var scope = host.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var context = services.GetRequiredService<ProductDataContext>();
+        var embeddingService = services.GetRequiredService<IEmbeddingService>();
+        var logger = services.GetRequiredService<ILogger<ProductDataContext>>();
+
+        try
+        {
+            if (!await context.Database.CanConnectAsync())
+            {
+                throw new InvalidOperationException("Database is not available for maintenance.");
+            }
+
+            if (context.Database.IsSqlServer())
+            {
+                await EnsureShopTablesAsync(context);
+            }
+
+            await EnsureProductDetailsAsync(context);
+
+            logger.LogInformation("Database maintenance started.");
+
+            if (!await context.Product.AnyAsync())
+            {
+                logger.LogWarning("No products found in database. Skipping data initialization because the database was provisioned externally.");
+                return;
+            }
+
+            await EnsureProductEmbeddingsAsync(context, embeddingService, logger);
+            await EnsureVectorIndexAsync(context, logger);
+            await DbInitializer.LoadImagesAsync(context, logger);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while maintaining the database.");
+            throw;
+        }
+    }
+
+    public static async Task GenerateProductEmbeddingsAsync(this IHost host)
+    {
+        using var scope = host.Services.CreateScope();
+        var services = scope.ServiceProvider;
+        var context = services.GetRequiredService<ProductDataContext>();
+        var embeddingService = services.GetRequiredService<IEmbeddingService>();
+        var logger = services.GetRequiredService<ILogger<ProductDataContext>>();
+
+        if (!await context.Database.CanConnectAsync())
+        {
+            throw new InvalidOperationException("Database is not available for embedding generation.");
+        }
+
+        await EnsureProductEmbeddingsAsync(context, embeddingService, logger);
+    }
+
     private static async Task EnsureShopTablesAsync(ProductDataContext context)
     {
         await context.Database.ExecuteSqlRawAsync(
@@ -201,6 +274,14 @@ public static class Extensions
             IF COL_LENGTH(N'dbo.Products', N'DescriptionEmbedding') IS NULL
             BEGIN
                 ALTER TABLE dbo.Products ADD DescriptionEmbedding NVARCHAR(MAX) NULL;
+            END;
+            """);
+
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            IF COL_LENGTH(N'dbo.Products', N'NameEmbedding') IS NULL
+            BEGIN
+                ALTER TABLE dbo.Products ADD NameEmbedding NVARCHAR(MAX) NULL;
             END;
             """);
 
@@ -377,7 +458,7 @@ public static class Extensions
     private static async Task EnsureProductEmbeddingsAsync(ProductDataContext context, IEmbeddingService embeddingService, ILogger logger)
     {
         var productsNeedingEmbeddings = await context.Product
-            .Where(product => product.DescriptionEmbedding == null)
+            .Where(product => product.DescriptionEmbedding == null || product.NameEmbedding == null)
             .ToListAsync();
 
         if (productsNeedingEmbeddings.Count == 0)
@@ -387,24 +468,40 @@ public static class Extensions
 
         foreach (var product in productsNeedingEmbeddings)
         {
-            var content = BuildEmbeddingText(product);
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                continue;
-            }
-
-            try
-            {
-                product.DescriptionEmbedding = await embeddingService.EmbedTextAsync(content);
-                product.ModifiedDate = DateTime.UtcNow;
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to generate embedding for product {ProductId}", product.Id);
-            }
+            await GenerateProductEmbeddingsAsync(product, embeddingService, logger);
         }
 
         await context.SaveChangesAsync();
+    }
+
+    private static async Task GenerateProductEmbeddingsAsync(Product product, IEmbeddingService embeddingService, ILogger logger)
+    {
+        try
+        {
+            if (product.DescriptionEmbedding == null)
+            {
+                var descriptionText = BuildEmbeddingText(product);
+                if (!string.IsNullOrWhiteSpace(descriptionText))
+                {
+                    product.DescriptionEmbedding = await embeddingService.EmbedTextAsync(descriptionText);
+                }
+            }
+
+            if (product.NameEmbedding == null)
+            {
+                var nameText = BuildNameEmbeddingText(product);
+                if (!string.IsNullOrWhiteSpace(nameText))
+                {
+                    product.NameEmbedding = await embeddingService.EmbedTextAsync(nameText);
+                }
+            }
+
+            product.ModifiedDate = DateTime.UtcNow;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to generate embeddings for product {ProductId}", product.Id);
+        }
     }
 
     private static async Task EnsureVectorIndexAsync(ProductDataContext context, ILogger logger)
@@ -428,6 +525,11 @@ public static class Extensions
     private static string BuildEmbeddingText(Product product)
     {
         return string.Join(' ', new[] { product.Name, product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
+    }
+
+    private static string BuildNameEmbeddingText(Product product)
+    {
+        return string.IsNullOrWhiteSpace(product.Name) ? string.Empty : product.Name;
     }
 }
 
@@ -453,6 +555,7 @@ public static class DbInitializer
         foreach (var product in products)
         {
             product.DescriptionEmbedding = await embeddingService.EmbedTextAsync(BuildEmbeddingText(product));
+            product.NameEmbedding = await embeddingService.EmbedTextAsync(BuildNameEmbeddingText(product));
         }
 
         context.Product.AddRange(products);
@@ -469,7 +572,12 @@ public static class DbInitializer
         return string.Join(' ', new[] { product.Name, product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
     }
 
-    private static async Task LoadImagesAsync(ProductDataContext context, ILogger logger)
+    private static string BuildNameEmbeddingText(Product product)
+    {
+        return string.IsNullOrWhiteSpace(product.Name) ? string.Empty : product.Name;
+    }
+
+    internal static async Task LoadImagesAsync(ProductDataContext context, ILogger logger)
     {
         try
         {

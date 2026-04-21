@@ -1,0 +1,22 @@
+USE TinyShopDB;
+GO
+
+IF NOT EXISTS (SELECT 1
+FROM dbo.Products)
+BEGIN
+SET IDENTITY_INSERT dbo.Products ON;
+INSERT INTO [dbo].[Products] (Id, Name, Description, Details, Price, ImageUrl)
+VALUES
+    (1,'Solar Powered Flashlight', 'A compact trail light that keeps working after a full day in the sun.', 'Built for campsites, late hikes, and glove-box backups, this flashlight stores solar power through the day and throws a focused beam when you need reliable visibility after dark. It is a strong choice for travelers who want lightweight gear with fewer disposable batteries to manage. Pairs especially well with the Survival Kit, Camping Lantern, and Hiking Poles for a safer after-sunset setup.', 19.99, 'images/product1.png'),
+    (2,'Hiking Poles', 'Lightweight support poles that reduce fatigue on long climbs and uneven paths.', 'These poles add balance on rocky switchbacks, take pressure off knees during descents, and help you keep a steady pace over long distances. They are ideal for day hikes and multi-stop treks where comfort matters as much as speed. They work particularly well with the Outdoor Rain Jacket, Outdoor Backpack, and Camping Tent for full-day trail coverage.', 24.99, 'images/product2.png'),
+    (3,'Outdoor Rain Jacket', 'A weather-ready shell that blocks wind and rain without feeling bulky.', 'This jacket is a lightweight outer layer for gusty ridgelines, sudden showers, and cold early starts. It gives you enough weather protection to keep moving without overheating or packing a heavy shell. It complements the Hiking Poles, Outdoor Backpack, and Camping Tent when conditions look unpredictable.', 49.99, 'images/product3.png'),
+    (4,'Survival Kit', 'A grab-and-go emergency pack built for backcountry trips and unexpected delays.', 'Packed for preparedness, this kit covers the small essentials that become critical when weather shifts, routes change, or camp setup takes longer than planned. It is designed to sit in your pack without adding much mental overhead because the basics are already handled. It pairs naturally with the Solar Powered Flashlight, Camping Lantern, and Outdoor Backpack.', 99.99, 'images/product4.png'),
+    (5,'Outdoor Backpack', 'A versatile day-pack with enough room for layers, water, and camp essentials.', 'Sized for day trips and minimalist overnighters, this backpack keeps food, layers, and utility gear organized without feeling oversized. It is the anchor item for customers building a practical outdoor loadout around flexibility and comfort. It goes especially well with the Hiking Poles, Outdoor Rain Jacket, and Camping Cookware.', 39.99, 'images/product5.png'),
+    (6,'Camping Cookware', 'A nesting cookware set sized for simple meals at the campsite.', 'This cookware set nests neatly for transport and gives you the basics for hot drinks, quick breakfasts, and one-pot meals at camp. It is a strong fit for travelers who want simple meal prep without bulky kitchen gear. It works best alongside the Camping Stove, Camping Lantern, and Camping Tent.', 29.99, 'images/product6.png'),
+    (7,'Camping Stove', 'A dependable stove for fast boils, trail coffee, and compact camp kitchens.', 'Designed for compact cooking, this stove delivers quick heat for boiling water and preparing trail meals without a large setup. It is a dependable choice for campers who want speed, control, and a smaller footprint in their pack. It matches well with the Camping Cookware, Camping Lantern, and Camping Tent.', 49.99, 'images/product7.png'),
+    (8,'Camping Lantern', 'A bright campsite lantern that adds warm light to tents, tables, and trails.', 'This lantern adds broad, comfortable light for evening meals, tent organization, and campsite safety once the sun drops. It is useful when a flashlight is too directional and you need shared visibility around camp. It pairs neatly with the Solar Powered Flashlight, Camping Stove, and Camping Tent.', 19.99, 'images/product8.png'),
+    (9,'Camping Tent', 'A roomy shelter designed for quick setup and reliable overnight protection.', 'A solid tent turns a campsite into a base camp, and this one is positioned as the shelter piece around which the rest of an overnight setup comes together. It is aimed at campers who want straightforward setup and dependable coverage from dusk to dawn. It teams up well with the Camping Lantern, Outdoor Backpack, and Camping Cookware.', 99.99, 'images/product9.png')
+SET IDENTITY_INSERT dbo.Products OFF;
+END
+GO
+

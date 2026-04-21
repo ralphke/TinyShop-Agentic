@@ -56,3 +56,8 @@ BEGIN
     PRINT 'Vector columns added successfully';
 END;
 GO
+
+exec dbo.usp_EnableVectorSupport
+GO
+exec dbo.usp_AddVectorColumnsToProducts
+GO

@@ -46,6 +46,13 @@ public class Product
     /// </summary>
     [JsonIgnore]
     public float[]? DescriptionEmbedding { get; set; }
+
+    /// <summary>
+    /// Vector embedding of the product name for title-based semantic search.
+    /// Stored as an nvarchar(max) JSON payload when using local embedding storage.
+    /// </summary>
+    [JsonIgnore]
+    public float[]? NameEmbedding { get; set; }
 }
 
 [JsonSerializable(typeof(List<Product>))]

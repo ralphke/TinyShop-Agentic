@@ -37,7 +37,12 @@ public sealed class LocalEmbeddingService : IEmbeddingService
     {
         _httpClient = httpClient;
         _logger = logger;
-        _embeddingEndpoint = configuration["EmbeddingService:Endpoint"] ?? "http://localhost:8001/embed";
+        _embeddingEndpoint = configuration["EmbeddingService:Endpoint"]
+            ?? configuration["EMBEDDING_SERVICE__ENDPOINT"]
+            ?? configuration["EmbeddingService__Endpoint"]
+            ?? "http://localhost:8001/embed";
+
+        _logger.LogInformation("Embedding service endpoint configured as {Endpoint}", _embeddingEndpoint);
     }
 
     public async Task<float[]> EmbedTextAsync(string text)

@@ -1,7 +1,7 @@
--- Created by GitHub Copilot in SSMS - review carefully before executing
+-- This code isn't working with the current SQL Server 2025 CU3 Bulid.
 
 CREATE OR ALTER PROCEDURE dbo.usp_HybridProductSearch
-    @QueryVector NVARCHAR(MAX),
+    @QueryEmbeddings NVARCHAR(MAX),
     @CategoryFilter INT = NULL,
     @MinPrice DECIMAL(10,2) = NULL,
     @MaxPrice DECIMAL(10,2) = NULL,
@@ -9,8 +9,8 @@ CREATE OR ALTER PROCEDURE dbo.usp_HybridProductSearch
 AS
 BEGIN
     SET NOCOUNT ON;
-    
-    SELECT TOP (@TopN)
+    DECLARE @QueryVector VECTOR(1536) =  CAST(@QueryEmbeddings AS VECTOR(1536));
+    SELECT TOP (@TopN) --WITH APPROXIMATE
         p.Id,
         p.Name,
         p.Description,
@@ -20,7 +20,7 @@ BEGIN
     FROM VECTOR_SEARCH(
         TABLE = dbo.Products AS p,
         COLUMN = DescriptionVector,
-        SIMILAR_TO = CAST(@QueryVector AS VECTOR(1536)),
+        SIMILAR_TO = @QueryVector,
         METRIC = 'cosine',
         TOP_N = 100  -- Get more candidates for filtering
     ) AS vs

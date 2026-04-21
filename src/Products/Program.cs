@@ -35,8 +35,8 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Configure SQL Server connection
-var connectionString = builder.Configuration.GetConnectionString("ProductsDb") 
-    ?? "Server=(localdb)\\MSSQLLocalDB;Database=TineShopDB;Integrated Security=true;TrustServerCertificate=True;";
+var connectionString = builder.Configuration.GetConnectionString("ProductsDb")
+    ?? builder.Configuration["PRODUCTS_DB_CONNECTION_STRING"];
 
 builder.Services.AddDbContext<ProductDataContext>(options =>
 {
@@ -46,7 +46,11 @@ builder.Services.AddDbContext<ProductDataContext>(options =>
     }
     else
     {
-        options.UseSqlServer(connectionString);
+        options.UseSqlServer(connectionString, sqlOptions =>
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 10,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null));
     }
 });
 
@@ -87,7 +91,7 @@ app.MapProductEndpoints();
 app.MapCustomerOrderEndpoints();
 app.MapAgentCommerceEndpoints();
 
-// Initialize database and seed data if needed
+// Initialize the database and generate embeddings on startup.
 await app.InitializeDatabaseAsync();
 
 app.Run();

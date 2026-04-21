@@ -28,11 +28,11 @@ public sealed class ProductSearchService
         var query = _context.Product.AsQueryable();
         if (!string.IsNullOrWhiteSpace(keyword))
         {
-            var kw = keyword.ToLower();
+            var kw = keyword.ToLowerInvariant();
             query = query.Where(p =>
-                p.Name.ToLower().Contains(kw) ||
-                p.Description.ToLower().Contains(kw) ||
-                p.Details.ToLower().Contains(kw));
+                (p.Name != null && p.Name.ToLowerInvariant().Contains(kw)) ||
+                (p.Description != null && p.Description.ToLowerInvariant().Contains(kw)) ||
+                (p.Details != null && p.Details.ToLowerInvariant().Contains(kw)));
         }
 
         var total = await query.CountAsync();
@@ -72,12 +72,19 @@ public sealed class ProductSearchService
         // Vector similarity search: find products with highest cosine similarity
         // NOTE: SQL Server 2024+ supports vector search natively with vector_distance function
         // For earlier versions, fetch all products and score in memory
-        var products = await _context.Product
-            .Where(p => p.DescriptionEmbedding != null)
-            .ToListAsync();
+        var products = await _context.Product.ToListAsync();
 
-        var scored = products
-            .Select(p => new { Product = p, Score = CosineSimilarity(queryEmbedding, p.DescriptionEmbedding!) })
+        var scoredProducts = new List<(Product Product, float Score)>();
+        foreach (var product in products)
+        {
+            if (product.DescriptionEmbedding is { } embedding)
+            {
+                var score = CosineSimilarity(queryEmbedding, embedding);
+                scoredProducts.Add((product, score));
+            }
+        }
+
+        var scored = scoredProducts
             .OrderByDescending(x => x.Score)
             .Skip(skip)
             .Take(pageSize_)

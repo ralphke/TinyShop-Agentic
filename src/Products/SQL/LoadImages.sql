@@ -3,15 +3,15 @@
 -- NOTE: This requires OPENROWSET which needs special permissions and may not work in all environments
 -- For production, use the API endpoint PUT /api/Product/{id}/image instead
 
-USE TineShopDB;
+USE TinyShopDB;
 GO
 
 -- Enable advanced options (requires sysadmin or appropriate permissions)
--- EXEC sp_configURE 'show advanced options', 1;
--- RECONFIGURE;
--- EXEC sp_configURE 'Ad Hoc Distributed Queries', 1;
--- RECONFIGURE;
--- GO
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'Ad Hoc Distributed Queries', 1;
+RECONFIGURE;
+GO
 
 -- Load images for the first 9 products in sequential order by ID
 DECLARE @ProductId INT;
@@ -30,7 +30,7 @@ FETCH NEXT FROM product_cursor INTO @ProductId;
 WHILE @@FETCH_STATUS = 0 AND @ImageIndex <= @MaxImages
 BEGIN
     -- Construct the image file path based on sequential index
-    SET @ImagePath = N'D:\repros\VS2022-lab300\src\Products\wwwroot\images\product' + CAST(@ImageIndex AS NVARCHAR(10)) + N'.png';
+    SET @ImagePath = N'/usr/src/sql/images/product' + CAST(@ImageIndex AS NVARCHAR(10)) + N'.png';
     
     -- Build dynamic SQL to load the image
     SET @SQL = N'UPDATE dbo.Products 
