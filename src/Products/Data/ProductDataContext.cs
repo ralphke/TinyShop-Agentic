@@ -1,4 +1,5 @@
 using DataEntities;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -382,6 +383,8 @@ public static class Extensions
 
         if (productsNeedingEmbeddings.Count == 0)
         {
+            // No new embeddings to generate, but still sync native VECTOR columns for existing embeddings.
+            await TryUpdateNativeDescriptionVectorAsync(context, logger);
             return;
         }
 
@@ -405,6 +408,76 @@ public static class Extensions
         }
 
         await context.SaveChangesAsync();
+
+        // Use the embedding arrays as transitive source to populate the native SQL Server VECTOR columns.
+        await TryUpdateNativeDescriptionVectorAsync(context, logger);
+    }
+
+    /// <summary>
+    /// Writes each product's <see cref="Product.DescriptionEmbedding"/> float array (the "Embeddings Array")
+    /// as the transitive source into the native SQL Server <c>VECTOR</c> column <c>DescriptionVector</c>.
+    /// The float array is serialised to a JSON array string and then cast to the native VECTOR type via raw SQL.
+    /// This requires SQL Server 2025+ with preview features enabled; failures are logged as warnings so that
+    /// the application continues to work on older SQL Server versions using in-memory similarity scoring.
+    /// </summary>
+    private static async Task TryUpdateNativeDescriptionVectorAsync(ProductDataContext context, ILogger logger)
+    {
+        if (!context.Database.IsSqlServer())
+        {
+            return;
+        }
+
+        try
+        {
+            // The product catalog is small (single-digit count), so loading all into memory
+            // at startup and issuing one UPDATE per product is acceptable here.
+            var productsWithEmbeddings = await context.Product
+                .Where(p => p.DescriptionEmbedding != null)
+                .ToListAsync();
+
+            if (productsWithEmbeddings.Count == 0)
+            {
+                return;
+            }
+
+            // System.Text.Json always serialises floating-point numbers using the invariant culture
+            // (period as decimal separator), matching the JSON spec. No additional options are needed,
+            // but we use explicit options for clarity.
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = false };
+
+            foreach (var product in productsWithEmbeddings)
+            {
+                if (product.DescriptionEmbedding is not { Length: > 0 } embedding)
+                {
+                    continue;
+                }
+
+                // Serialise the float[] (Embeddings Array) to a JSON array string — this is the
+                // transitive source used to cast into the native SQL Server VECTOR type.
+                var embeddingJson = JsonSerializer.Serialize(embedding, jsonOptions);
+                var dimension = embedding.Length;
+
+                // EF1002: The interpolated value is `dimension` (an integer from code, not from user input).
+                // All user-controlled data (embeddingJson and productId) are parameterised via SqlParameter.
+#pragma warning disable EF1002
+                await context.Database.ExecuteSqlRawAsync(
+                    $"UPDATE dbo.Products SET DescriptionVector = CAST(@embeddingJson AS VECTOR({dimension}, FLOAT32)) WHERE Id = @productId",
+                    new SqlParameter("@embeddingJson", embeddingJson),
+                    new SqlParameter("@productId", product.Id));
+#pragma warning restore EF1002
+            }
+
+            logger.LogInformation(
+                "Updated native DescriptionVector column for {Count} products using embedding arrays as transitive source.",
+                productsWithEmbeddings.Count);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Could not update native DescriptionVector column. " +
+                "SQL Server VECTOR type requires SQL Server 2025+ with preview features enabled. " +
+                "Semantic search will continue using in-memory similarity scoring.");
+        }
     }
 
     private static async Task EnsureVectorIndexAsync(ProductDataContext context, ILogger logger)
