@@ -56,7 +56,7 @@ END CATCH
 GO
 
 -- Base folder where images are stored on the SQL Server machine.
-DECLARE @BasePath nvarchar(4000) = N'D:\repros\VS2022-lab300\src\Products\wwwroot\images\product';
+DECLARE @BasePath nvarchar(4000) = N'D:\repros\TinyShop-Agentic\src\Products\wwwroot\images\product';
 
 
 -- Use dynamic SQL per-row to pass a literal path into OPENROWSET(BULK ...)
@@ -114,7 +114,7 @@ GO
 
 -- If OPENROWSET with dynamic path is not allowed in your environment, uncomment and use static explicit updates:
 -- UPDATE Products
--- SET image = (SELECT BulkColumn FROM OPENROWSET(BULK N'D:\repros\VS2022-lab300\src\Products\wwwroot\images\product1.png', SINGLE_BLOB) AS img)
+-- SET image = (SELECT BulkColumn FROM OPENROWSET(BULK N'D:\repros\TinyShop-Agentic\src\Products\wwwroot\images\product1.png', SINGLE_BLOB) AS img)
 -- WHERE ImageUrl = 'product1.png';
 
 -- Show results

@@ -30,7 +30,7 @@ FETCH NEXT FROM product_cursor INTO @ProductId;
 WHILE @@FETCH_STATUS = 0 AND @ImageIndex <= @MaxImages
 BEGIN
     -- Construct the image file path based on sequential index
-    SET @ImagePath = N'D:\repros\VS2022-lab300\src\Products\wwwroot\images\product' + CAST(@ImageIndex AS NVARCHAR(10)) + N'.png';
+    SET @ImagePath = N'D:\repros\TinyShop-Agentic\src\Products\wwwroot\images\product' + CAST(@ImageIndex AS NVARCHAR(10)) + N'.png';
     
     -- Build dynamic SQL to load the image
     SET @SQL = N'UPDATE dbo.Products 
