@@ -81,13 +81,6 @@ curl -X PUT "https://localhost:7130/api/Product/1/image" \
   -F "file=@src/Products/wwwroot/images/product1.png"
 ```
 
-**Manual LocalDB setup** (without Aspire container):
-```bash
-# Create database, table, user, and seed rows
-sqlcmd -S "(localdb)\MSSQLLocalDB" -i src/Products/SQL/Setup.sql
-```
-`LoadImages.sql` uses `OPENROWSET(BULK ...)` which requires `Ad Hoc Distributed Queries` to be enabled — use the API upload approach above instead.
-
 **Verify image state** at any time via the debug endpoint:
 ```
 GET /api/Product/debug/images

@@ -59,18 +59,6 @@ public class ProductDataContext : DbContext
             entity.Property(e => e.ModifiedDate).HasDefaultValueSql("GETUTCDATE()");
             entity.HasIndex(e => e.Name).HasDatabaseName("IX_Products_Name");
             entity.HasIndex(e => e.Price).HasDatabaseName("IX_Products_Price");
-            entity.Property(e => e.DescriptionEmbedding)
-                .HasConversion(embeddingConverter)
-                .Metadata.SetValueComparer(embeddingComparer);
-            entity.Property(e => e.DescriptionEmbedding)
-                .HasColumnType("nvarchar(max)")
-                .IsRequired(false);
-            entity.Property(e => e.NameEmbedding)
-                .HasConversion(embeddingConverter)
-                .Metadata.SetValueComparer(embeddingComparer);
-            entity.Property(e => e.NameEmbedding)
-                .HasColumnType("nvarchar(max)")
-                .IsRequired(false);
         });
 
         modelBuilder.Entity<CustomerProfile>(entity =>
@@ -263,26 +251,22 @@ public static class Extensions
     {
         await context.Database.ExecuteSqlRawAsync(
             """
-            IF COL_LENGTH(N'dbo.Products', N'Details') IS NULL
+            IF OBJECT_ID(N'dbo.Products', N'U') IS NULL 
             BEGIN
-                ALTER TABLE dbo.Products ADD Details NVARCHAR(4000) NULL;
-            END;
-            """);
-
-        await context.Database.ExecuteSqlRawAsync(
-            """
-            IF COL_LENGTH(N'dbo.Products', N'DescriptionEmbedding') IS NULL
-            BEGIN
-                ALTER TABLE dbo.Products ADD DescriptionEmbedding NVARCHAR(MAX) NULL;
-            END;
-            """);
-
-        await context.Database.ExecuteSqlRawAsync(
-            """
-            IF COL_LENGTH(N'dbo.Products', N'NameEmbedding') IS NULL
-            BEGIN
-                ALTER TABLE dbo.Products ADD NameEmbedding NVARCHAR(MAX) NULL;
-            END;
+                CREATE TABLE dbo.Products
+                (
+                    Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                    Name NVARCHAR(200) NOT NULL,
+                    Description NVARCHAR(1000) NULL,
+                    Details NVARCHAR(4000) NULL,
+                    Price DECIMAL(18,2) NOT NULL,
+                    ImageUrl NVARCHAR(500) NULL,
+                    ImageData VARBINARY(MAX) NULL,
+                    DescriptionVector VECTOR(1536, FLOAT32) NULL,
+                    DetailsVector VECTOR(1536, FLOAT32) NULL,
+                    CreatedDate DATETIME2 NOT NULL CONSTRAINT DF_Products_CreatedDate DEFAULT SYSUTCDATETIME(),
+                    ModifiedDate DATETIME2 NOT NULL CONSTRAINT DF_Products_ModifiedDate DEFAULT SYSUTCDATETIME()
+                );
             """);
 
         await context.Database.ExecuteSqlRawAsync(
@@ -458,7 +442,7 @@ public static class Extensions
     private static async Task EnsureProductEmbeddingsAsync(ProductDataContext context, IEmbeddingService embeddingService, ILogger logger)
     {
         var productsNeedingEmbeddings = await context.Product
-            .Where(product => product.DescriptionEmbedding == null || product.NameEmbedding == null)
+            .Where(product => product.DescriptionVector == null || product.DetailsVector == null)
             .ToListAsync();
 
         if (productsNeedingEmbeddings.Count == 0)
@@ -478,21 +462,21 @@ public static class Extensions
     {
         try
         {
-            if (product.DescriptionEmbedding == null)
+            if (product.DescriptionVector == null)
             {
                 var descriptionText = BuildEmbeddingText(product);
                 if (!string.IsNullOrWhiteSpace(descriptionText))
                 {
-                    product.DescriptionEmbedding = await embeddingService.EmbedTextAsync(descriptionText);
+                    product.DescriptionVector = await embeddingService.EmbedTextAsync(descriptionText);
                 }
             }
 
-            if (product.NameEmbedding == null)
+            if (product.DetailsVector == null)
             {
-                var nameText = BuildNameEmbeddingText(product);
-                if (!string.IsNullOrWhiteSpace(nameText))
+                var DetailsText = BuildNameEmbeddingText(product);
+                if (!string.IsNullOrWhiteSpace(DetailsText))
                 {
-                    product.NameEmbedding = await embeddingService.EmbedTextAsync(nameText);
+                    product.DetailsVector = await embeddingService.EmbedTextAsync(DetailsText);
                 }
             }
 
@@ -508,11 +492,7 @@ public static class Extensions
     {
         try
         {
-            // Note: The DescriptionEmbedding column is stored as nvarchar(max) for LocalDB compatibility.
-            // SQL Server does not allow nvarchar(max) columns to be used as key columns in indexes.
-            // However, semantic search uses in-memory cosine similarity scoring, which doesn't require
-            // a database index and provides excellent performance for the product catalog size.
-            // For SQL Server 2024+ with native VECTOR type support, a VECTOR index would be created here.
+            // For SQL Server 2025+ with native VECTOR type support, a VECTOR index would be created here.
             
             logger.LogInformation("Vector embeddings are persisted and ready for semantic search via in-memory similarity scoring.");
         }
