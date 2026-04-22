@@ -51,7 +51,7 @@ On first startup, Products initializes the database and seeds product data.
 If image bytes are missing in an existing DB, use:
 
 ```powershell
-cd D:\repros\VS2022-lab300\src\Products\SQL
+cd D:\repros\TinyShop-Agentic\src\Products\SQL
 .\LoadImages.ps1
 ```
 

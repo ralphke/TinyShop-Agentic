@@ -83,7 +83,7 @@ Use this workflow on Windows:
 
 1. Install WSL 2 and a Linux distro such as Ubuntu.
 2. Install Docker Desktop and enable WSL integration for that distro.
-3. Clone the repository inside the WSL filesystem, for example under `~/src/VS2022-lab300`, instead of working from `/mnt/d/...`.
+3. Clone the repository inside the WSL filesystem, for example under `~/src/TinyShop-Agentic`, instead of working from `/mnt/d/...`.
 4. Open the folder from VS Code in a WSL window.
 5. Run `Dev Containers: Reopen in Container`.
 6. After the container finishes provisioning, start the app with `aspire run`.
@@ -126,3 +126,27 @@ You'll use GitHub Copilot's various features to enhance and complete this applic
 |:-------------------|:----------------------------------|:-------------------|
 | Build session page | https://build.microsoft.com/sessions/LAB300 | Event session page with downloadable recording, slides, resources, and speaker bio |
 |Microsoft Learn|https://aka.ms/AAI_DevAppGitHubCop_Plan|Official Collection or Plan with skilling resources to learn at your own pace|
+
+## Repository Rename Notice
+
+This repository was renamed from **`VS2022-lab300`** to **`TinyShop-Agentic`**.
+
+> **Note:** GitHub does not allow spaces in repository names. The requested name "TinyShop Agentic" was adjusted to the valid slug **`TinyShop-Agentic`**.
+
+GitHub automatically redirects the old URL (`https://github.com/ralphke/VS2022-lab300`) to the new one, but you should update your local remotes to avoid relying on that redirect indefinitely.
+
+### Updating your local clone
+
+Run the following commands in every local clone of this repository:
+
+```bash
+git remote set-url origin https://github.com/ralphke/TinyShop-Agentic.git
+git remote -v   # verify the new URL is set
+```
+
+If you use SSH:
+
+```bash
+git remote set-url origin git@github.com:ralphke/TinyShop-Agentic.git
+git remote -v
+```
