@@ -1,16 +1,18 @@
 {
     "name": "TinyShop",
-    "image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
 
     "features": {
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {
-            "installDockerBuildx": true
-        },
-        "ghcr.io/devcontainers/features/node:1": {
+        "ghcr.io/devcontainers/features/node:2": {
             "version": "lts"
         },
-        "ghcr.io/devcontainers/features/github-cli:1": {}
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
     },
+
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
 
     "postCreateCommand": "bash .devcontainer/postCreate.sh",
 
@@ -19,6 +21,7 @@
     // communication works over plain HTTP inside the container.
     "remoteEnv": {
         "PATH": "${containerEnv:PATH}:/home/vscode/.aspire/bin",
+        "DOCKER_HOST": "unix:///var/run/docker.sock",
         "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
         "DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS": "true"
     },
@@ -44,7 +47,8 @@
             "extensions": [
                 "ms-dotnettools.csdevkit",
                 "ms-dotnettools.csharp",
-                "ms-azuretools.vscode-dotnet-aspire"
+                "ms-azuretools.vscode-dotnet-aspire",
+                "ms-mssql.mssql"
             ],
             "settings": {
                 "dotnet.defaultSolution": "src/TinyShop.sln"

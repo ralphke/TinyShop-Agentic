@@ -16,10 +16,10 @@ BEGIN
             p.Name,
             p.Description,
             p.Price,
-            VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(1536, FLOAT32)), p.DescriptionVector) AS SimilarityScore
+            VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(768, FLOAT32)), p.DescriptionVector) AS SimilarityScore
         FROM dbo.Products p
         WHERE p.DescriptionVector IS NOT NULL
-        ORDER BY VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(1536, FLOAT32)), p.DescriptionVector) ASC;
+        ORDER BY VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(768, FLOAT32)), p.DescriptionVector) ASC;
     END
     ELSE IF @SearchType = 'name'
     BEGIN
@@ -28,10 +28,10 @@ BEGIN
             p.Name,
             p.Description,
             p.Price,
-            VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(384, FLOAT32)), p.NameVector) AS SimilarityScore
+            VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(768, FLOAT32)), p.NameVector) AS SimilarityScore
         FROM dbo.Products p
         WHERE p.NameVector IS NOT NULL
-        ORDER BY VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(384, FLOAT32)), p.NameVector) ASC;
+        ORDER BY VECTOR_DISTANCE(@DistanceMetric, CAST(@QueryVector AS VECTOR(768, FLOAT32)), p.NameVector) ASC;
     END
     ELSE
     BEGIN

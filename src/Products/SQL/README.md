@@ -1,31 +1,34 @@
-# SQL Server LocalDB Setup Instructions
+# SQL Server Setup Instructions
 
 ## Prerequisites
-- SQL Server LocalDB installed (included with Visual Studio or SQL Server Express)
-- SQL Server Management Studio (SSMS) or Azure Data Studio (optional, for running SQL scripts)
+
+- SQL Server 2025:latest Docker image installed (included with Visual Studio or SQL Server Express)
+- SQL Server Management Studio (SSMS) or Visual Studio Code mssql extension (optional, for running SQL scripts)
 
 ## Setup Steps
 
-### Option 1: Using Windows Authentication (Recommended for LocalDB)
+### Option 1: Using SQL Authentication (Recommended for sql in Docker container)
 
 1. **Run the SQL Setup Script**
    - Open SQL Server Management Studio (SSMS) or Azure Data Studio
-   - Connect to `(localdb)\MSSQLLocalDB`
+   - Connect to `sqlserver:1433`
    - Open the file `Products/SQL/Setup.sql`
    - Execute the script
 
    **OR** use sqlcmd from command line, passing the password from `.env`:
 
    PowerShell:
+
    ```powershell
    $pw = (Get-Content .env | Select-String 'MSSQL_SA_PASSWORD').ToString().Split('=',2)[1]
-   sqlcmd -S "(localdb)\MSSQLLocalDB" -i src\Products\SQL\Setup.sql -v MSSQL_SA_PASSWORD="$pw"
+   sqlcmd -S "sqlserver:1433" -i src\Products\SQL\Setup.sql -v MSSQL_SA_PASSWORD="$pw"
    ```
 
    cmd:
+
    ```cmd
    for /f "tokens=2 delims==" %i in ('findstr MSSQL_SA_PASSWORD .env') do set _PW=%i
-   sqlcmd -S (localdb)\MSSQLLocalDB -i src\Products\SQL\Setup.sql -v MSSQL_SA_PASSWORD="%_PW%"
+   sqlcmd -S sqlserver -i src\Products\SQL\Setup.sql -v MSSQL_SA_PASSWORD="%_PW%"
    ```
 
 2. **The script will:**
@@ -36,11 +39,11 @@
    - Seed initial product data
 
 3. **Configure Connection String**
-   
-   The application is configured to use **Windows Integrated Security** by default:
+   The application is configured to use **SQL Server Security** by default:
+
    ```json
    "ConnectionStrings": {
-  "ProductsDb": "Server=(localdb)\\MSSQLLocalDB;Database=TestDB;Integrated Security=true;TrustServerCertificate=True;"
+  "TinyShopDB": "Server=sqlserver;Database=TinyShopDB;Integrated Security=false;TrustServerCertificate=True;"
    }
    ```
 
@@ -48,7 +51,7 @@
    replacing `<password>` with the value of `MSSQL_SA_PASSWORD` from `.env`:
    ```json
    "ConnectionStrings": {
-     "ProductsDb": "Server=(localdb)\\MSSQLLocalDB;Database=TestDB;User Id=TinyShopUser;Password=<password>;TrustServerCertificate=True;"
+     "TinyShopDB": "Server=sqlserver;Database=TinyShopDB;User Id=TinyShopUser;Password=<password>;TrustServerCertificate=True;"
    }
    ```
 
@@ -56,7 +59,7 @@
 
 The application will automatically create the database and seed data on first run if using Integrated Security:
 
-1. Ensure LocalDB is running
+1. Ensure sqlserver is running
 2. Run the application
 3. EF Core will call `EnsureCreatedAsync()` to create the database
 
@@ -92,20 +95,19 @@ GET /api/Product/1/image
 
 ## Troubleshooting
 
-### LocalDB Not Found
-If you get "Cannot connect to (localdb)\MSSQLLocalDB":
-- Verify LocalDB is installed: `sqllocaldb info`
-- Start LocalDB: `sqllocaldb start MSSQLLocalDB`
+### sqlserver Not Found
+If you get "Cannot connect to sqlserver":
+- Verify SQLServer is installed: `sqllocaldb info`
+- Start sqlserver: `sqllocaldb start MSSQLLocalDB`
 - Check version: `sqllocaldb versions`
 
 ### Login Failed
 If using SQL Authentication and login fails:
 - Ensure SQL Server Authentication is enabled
-- For LocalDB, Windows Authentication is recommended
 
 ### Connection String Issues
-- Always escape backslashes in JSON: `(localdb)\\MSSQLLocalDB`
-- Use `TrustServerCertificate=True` for LocalDB
+- Always escape backslashes in JSON: `sqlserver:1433`
+- Use `TrustServerCertificate=True` for SQlserver
 
 ## Database Schema
 
@@ -117,6 +119,7 @@ CREATE TABLE dbo.Products (
     Price DECIMAL(18,2) NOT NULL,
     ImageUrl NVARCHAR(500) NULL,
     ImageData VARBINARY(MAX) NULL,
+    DescriptionVector vector(768) NULL,
     CreatedDate DATETIME2 DEFAULT GETUTCDATE(),
     ModifiedDate DATETIME2 DEFAULT GETUTCDATE()
 );

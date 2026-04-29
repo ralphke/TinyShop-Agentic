@@ -105,11 +105,12 @@ public static class ProductEndpoints
    {
       product.CreatedDate = DateTime.UtcNow;
       product.ModifiedDate = DateTime.UtcNow;
-      product.DescriptionEmbedding = await embeddingService.EmbedTextAsync(BuildEmbeddingText(product));
-      product.NameEmbedding = await embeddingService.EmbedTextAsync(BuildNameEmbeddingText(product));
+      product.DescriptionVector = await embeddingService.EmbedTextAsync(BuildEmbeddingText(product));
+      product.NameVector = await embeddingService.EmbedTextAsync(BuildNameEmbeddingText(product));
 
       db.Product.Add(product);
       await db.SaveChangesAsync();
+      await db.UpsertProductVectorsAsync(product.Id, product.DescriptionVector, product.NameVector);
       return Results.Created($"/api/Product/{product.Id}", product);
    })
    .WithName("CreateProduct")
@@ -126,8 +127,8 @@ public static class ProductEndpoints
            product.Details = updatedProduct.Details;
            product.Price = updatedProduct.Price;
            product.ImageUrl = updatedProduct.ImageUrl;
-           product.DescriptionEmbedding = await embeddingService.EmbedTextAsync(BuildEmbeddingText(updatedProduct));
-           product.NameEmbedding = await embeddingService.EmbedTextAsync(BuildNameEmbeddingText(updatedProduct));
+           product.DescriptionVector = await embeddingService.EmbedTextAsync(BuildEmbeddingText(updatedProduct));
+           product.NameVector = await embeddingService.EmbedTextAsync(BuildNameEmbeddingText(updatedProduct));
 
            // Update image data if provided
            if (updatedProduct.ImageData != null)
@@ -138,6 +139,7 @@ public static class ProductEndpoints
            product.ModifiedDate = DateTime.UtcNow;
 
            await db.SaveChangesAsync();
+           await db.UpsertProductVectorsAsync(product.Id, product.DescriptionVector, product.NameVector);
            return Results.NoContent();
         })
 .WithName("UpdateProduct")
@@ -188,7 +190,7 @@ public static class ProductEndpoints
 
    private static string BuildEmbeddingText(Product product)
    {
-      return string.Join(' ', new[] { product.Name, product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
+      return string.Join(' ', new[] { product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
    }
 
    private static string BuildNameEmbeddingText(Product product)

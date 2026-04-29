@@ -24,6 +24,12 @@ public class Product
     public string? ImageUrl { get; set; }
 
     [JsonIgnore]
+    public float[]? DescriptionVector { get; set; }
+
+    [JsonIgnore]
+    public float[]? NameVector { get; set; }
+
+    [JsonIgnore]
     public byte[]? ImageData { get; set; }
 
     [NotMapped]
@@ -40,19 +46,6 @@ public class Product
     [JsonPropertyName("modifiedDate")]
     public DateTime ModifiedDate { get; set; }
 
-    /// <summary>
-    /// Vector embedding of the product description for semantic search.
-    /// SQL Server stores this as a vector(1536) column (Ada-3 dimension).
-    /// </summary>
-    [JsonIgnore]
-    public float[]? DescriptionEmbedding { get; set; }
-
-    /// <summary>
-    /// Vector embedding of the product name for title-based semantic search.
-    /// Stored as an nvarchar(max) JSON payload when using local embedding storage.
-    /// </summary>
-    [JsonIgnore]
-    public float[]? NameEmbedding { get; set; }
 }
 
 [JsonSerializable(typeof(List<Product>))]

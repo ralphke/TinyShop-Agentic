@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <EntityFrameworkCoreVersion>10.0.6</EntityFrameworkCoreVersion>
+    <MicrosoftNetTestSdkVersion>18.0.0</MicrosoftNetTestSdkVersion>
+    <XunitVersion>2.9.3</XunitVersion>
+    <XunitRunnerVisualStudioVersion>3.1.5</XunitRunnerVisualStudioVersion>
+    <FluentAssertionsVersion>6.12.2</FluentAssertionsVersion>
+    <CoverletCollectorVersion>6.0.4</CoverletCollectorVersion>
+    <AspNetCoreMvcTestingVersion>10.0.0</AspNetCoreMvcTestingVersion>
+  </PropertyGroup>
+</Project>

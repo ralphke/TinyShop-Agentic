@@ -25,13 +25,13 @@ public class StoreUiTests
             {
                 builder.UseEnvironment("Testing");
             });
-   
+
         // Seed the Products database with test data
         using (var scope = productsFactory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ProductDataContext>();
             db.Database.EnsureCreated();
-            
+
             if (!db.Product.Any())
             {
                 db.Product.Add(new Product { Name = "Solar Powered Flashlight", Description = "Test product", Price = 19.99m, ImageUrl = "product1.png" });
@@ -437,7 +437,7 @@ public class StoreUiTests
     }
 
     // Helper method to create test factories with seeded products
-    private async Task<(WebApplicationFactory<Store.Program> storeFactory, WebApplicationFactory<Products.Program> productsFactory)> 
+    private async Task<(WebApplicationFactory<Store.Program> storeFactory, WebApplicationFactory<Products.Program> productsFactory)>
         CreateTestFactoriesWithProducts(int count = 3)
     {
         var productsFactory = new WebApplicationFactory<Products.Program>()

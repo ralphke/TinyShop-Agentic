@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+COPY ["Directory.Build.props", "./"]
 COPY ["src/Products/Products.csproj", "Products/"]
 COPY ["src/DataEntities/DataEntities.csproj", "DataEntities/"]
 COPY ["src/TinyShop.ServiceDefaults/TinyShop.ServiceDefaults.csproj", "TinyShop.ServiceDefaults/"]

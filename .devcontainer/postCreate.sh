@@ -25,6 +25,24 @@ echo ""
 echo "▶ Restoring local dotnet tools..."
 dotnet tool restore --tool-manifest src/.config/dotnet-tools.json
 
+# ── go-sqlcmd SQL Server CLI ─────────────────────────────────────────────────
+echo ""
+echo "▶ Installing go-sqlcmd SQL Server CLI..."
+sudo apt-get update -qq
+sudo apt-get install -y --no-install-recommends \
+    apt-transport-https \
+    bzip2 \
+    ca-certificates \
+    curl \
+    gnupg \
+    unixodbc
+
+curl -L https://github.com/microsoft/go-sqlcmd/releases/latest/download/sqlcmd-linux-amd64.tar.bz2 \
+    | sudo tar -xjf - -C /usr/local/bin
+sudo chmod +x /usr/local/bin/sqlcmd /usr/local/bin/sqlcmd_debug
+
+echo "  sqlcmd $(/usr/local/bin/sqlcmd --version 2>/dev/null || true)"
+
 # ── Dev certificate ─────────────────────────────────────────────────────────
 echo ""
 echo "▶ Trusting development certificate..."
@@ -44,3 +62,4 @@ echo "  Aspire Dashboard → http://localhost:15218"
 echo "  Store (Blazor)   → http://localhost:5158"
 echo "  Products API     → http://localhost:5228"
 echo ""
+env

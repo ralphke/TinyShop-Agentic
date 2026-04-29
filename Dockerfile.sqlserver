@@ -5,36 +5,57 @@ USER root
 # Install required dependencies (including unzip early)
 RUN apt-get update && \
     apt-get install -y \
-    curl \
-    wget \
-    unzip \
-    apt-transport-https \
-    ca-certificates && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+        curl \
+        ca-certificates \
+        gnupg \
+        apt-transport-https \
+        unzip \
+        libunwind8 \
+        libssl3 \
+        libstdc++6 \
+        unixodbc \
+        unixodbc-dev \
+        wget \
+        unzip \
+        bzip2 \
+        apt-transport-https \
+        ca-certificates && \
+        apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Download and install .NET 8.0 SDK
-RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
+# Download and install .NET 10.0 SDK
+RUN set -eux; \
+    wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x dotnet-install.sh && \
-    ./dotnet-install.sh --channel 8.0 --install-dir /usr/local/dotnet && \
+    ./dotnet-install.sh --channel 10.0 --install-dir /usr/local/dotnet && \
     rm dotnet-install.sh && \
     ln -s /usr/local/dotnet/dotnet /usr/local/bin/dotnet
 
 # Download and install sqlpackage standalone
-RUN mkdir -p /opt/sqlpackage && \
+RUN set -eux; \
+    mkdir -p /opt/sqlpackage && \
     curl -L https://aka.ms/sqlpackage-linux -o /tmp/sqlpackage.zip && \
     unzip -q /tmp/sqlpackage.zip -d /opt/sqlpackage && \
     rm /tmp/sqlpackage.zip && \
     chmod +x /opt/sqlpackage/sqlpackage && \
     ln -s /opt/sqlpackage/sqlpackage /usr/local/bin/sqlpackage
 
+    # Install the go-sqlcmd tool by downloading the latest release from GitHub and extracting it to /usr/local/bin
+RUN set -eux; \
+    curl -L https://github.com/microsoft/go-sqlcmd/releases/latest/download/sqlcmd-linux-amd64.tar.bz2 \
+    | tar -xjf - -C /usr/local/bin && \
+    chmod +x /usr/local/bin/sqlcmd /usr/local/bin/sqlcmd_debug && \
+    echo "  sqlcmd $(/usr/local/bin/sqlcmd --version 2>/dev/null || true)"
+
 # Verify installations
 RUN dotnet --version && \
     sqlpackage /Version
 
+WORKDIR /usr/src/sql
+
 # Create mount point for SQL init scripts
 RUN mkdir -p /usr/src/sql/init
 
-# Switch back to mssql user
+#   Switch back to mssql user
 USER mssql
 
 # Keep original entrypoint

@@ -2,7 +2,7 @@
 <img src="img/banner.jpg" alt="decorative banner" width="1200"/>
 </p>
 
-# LAB300 - Hands-on with GitHub Copilot in Visual Studio 2022
+# TinyShop-Agentic - Hands-on with GitHub Copilot in Visual Studio 2022
 
 This lab will guide you through using GitHub Copilot's various features in Visual Studio 2022. You'll start with a partially completed TinyShop application and use GitHub Copilot to complete missing features and enhance the application.
 
@@ -47,6 +47,13 @@ MSSQL_SA_PASSWORD=your-sa-password-here
 docker-compose up 
 ```
 
+To build just the SQL Server image without starting the full stack:
+
+```bash
+docker compose build sqlserver
+```
+
+This container build now only prepares the SQL Server image; database initialization happens later in the separate `init-db` service rather than during image build.
 
 > Note: the `products` app no longer performs EF Core database creation or seeding at startup. The schema must exist before the service starts.
 
@@ -87,7 +94,7 @@ dotnet test src/Tests/TinyShopTest/TinyShopTest.csproj
 
 ## WSL Dev Container
 
-This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker-in-Docker enabled so Aspire can start its SQL Server container from inside the development container.
+This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker CLI configured to use your host Docker Desktop daemon through the mounted Docker socket. Aspire can start its SQL Server container using the host Docker engine instead of Docker-in-Docker.
 
 Use this workflow on Windows:
 

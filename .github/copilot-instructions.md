@@ -4,7 +4,7 @@ TinyShop is a .NET Aspire cloud-native e-commerce app. The Aspire AppHost (`Tiny
 
 ## Dev Container
 
-A devcontainer is configured in `.devcontainer/`. It provides a ready-to-code Linux environment with .NET 10, Docker-in-Docker (required for Aspire to run the SQL Server container), Node.js, the Aspire CLI, and the C# DevKit VS Code extension — no local tooling needed.
+A devcontainer is configured in `.devcontainer/`. It provides a ready-to-code Linux environment with .NET 10 and Docker CLI configured to use the host Docker Desktop daemon, Node.js, the Aspire CLI, and the C# DevKit VS Code extension — no local tooling needed.
 
 Open in GitHub Codespaces or VS Code with the Dev Containers extension, then:
 

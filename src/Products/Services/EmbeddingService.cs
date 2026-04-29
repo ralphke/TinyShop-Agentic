@@ -1,5 +1,6 @@
 namespace Products.Services;
 
+using System.Linq;
 using System.Net.Http.Json;
 using System.Text.Json;
 
@@ -13,7 +14,7 @@ public interface IEmbeddingService
     /// Generate a vector embedding from text.
     /// </summary>
     /// <param name="text">The text to embed (e.g., product description).</param>
-    /// <returns>A vector embedding (float array, typically 1536 dimensions for Ada-3).</returns>
+    /// <returns>A vector embedding (float array, typically 768 dimensions for the local MPNet embedding model).</returns>
     Task<float[]> EmbedTextAsync(string text);
 
     /// <summary>
@@ -45,6 +46,8 @@ public sealed class LocalEmbeddingService : IEmbeddingService
         _logger.LogInformation("Embedding service endpoint configured as {Endpoint}", _embeddingEndpoint);
     }
 
+    private const int ExpectedEmbeddingDimension = 768;
+
     public async Task<float[]> EmbedTextAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -55,7 +58,9 @@ public sealed class LocalEmbeddingService : IEmbeddingService
         var payloads = new object[]
         {
             new { inputs = text },
-            new { inputs = new[] { text } }
+            new { input = text },
+            new { inputs = new[] { text } },
+            new { input = new[] { text } }
         };
 
         Exception? lastError = null;
@@ -74,9 +79,9 @@ public sealed class LocalEmbeddingService : IEmbeddingService
                 await using var stream = await response.Content.ReadAsStreamAsync();
                 using var document = await JsonDocument.ParseAsync(stream);
                 var embedding = ExtractEmbedding(document.RootElement);
-                if (embedding.Length == 0)
+                if (embedding.Length != ExpectedEmbeddingDimension || embedding.All(value => value == 0f))
                 {
-                    lastError = new InvalidOperationException("Embedding endpoint returned an empty embedding vector.");
+                    lastError = new InvalidOperationException($"Embedding endpoint returned an invalid vector (length={embedding.Length}); expected {ExpectedEmbeddingDimension} non-zero values.");
                     continue;
                 }
 
@@ -89,7 +94,7 @@ public sealed class LocalEmbeddingService : IEmbeddingService
         }
 
         _logger.LogError(lastError, "Failed to retrieve embedding from local endpoint {Endpoint}", _embeddingEndpoint);
-        throw new InvalidOperationException($"Unable to generate embedding from endpoint '{_embeddingEndpoint}'.", lastError);
+        throw new InvalidOperationException($"Unable to generate valid embedding from endpoint '{_embeddingEndpoint}'.", lastError);
     }
 
     public async Task<IDictionary<string, float[]>> EmbedBatchAsync(IEnumerable<string> texts)

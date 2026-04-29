@@ -48,6 +48,7 @@ docker compose down
 ## Image Loading and Seeding
 
 On first startup, Products initializes the database and seeds product data.
+The initializaion process uses also the huggingface/textembedings LLM to create the embeddings for Product name and description
 If image bytes are missing in an existing DB, use:
 
 ```powershell

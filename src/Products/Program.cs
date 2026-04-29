@@ -1,4 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
@@ -35,8 +38,21 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Configure SQL Server connection
-var connectionString = builder.Configuration.GetConnectionString("ProductsDb")
-    ?? builder.Configuration["PRODUCTS_DB_CONNECTION_STRING"];
+var connectionString = builder.Configuration.GetConnectionString("TinyShopDB");
+var connectionStringSource = "ConnectionStrings:TinyShopDB";
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    connectionString = builder.Configuration["PRODUCTS_DB_CONNECTION_STRING"];
+    connectionStringSource = "PRODUCTS_DB_CONNECTION_STRING";
+}
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("No SQL connection string configured. Set ConnectionStrings:TinyShopDB or PRODUCTS_DB_CONNECTION_STRING.");
+}
+
+var connectionStringInfo = GetConnectionStringInfo(connectionString);
 
 builder.Services.AddDbContext<ProductDataContext>(options =>
 {
@@ -72,6 +88,12 @@ builder.Services.AddCors(options =>
 // Add services to the container.
 var app = builder.Build();
 
+app.Logger.LogInformation(
+    "Products DB connection resolved from {Source}. Target server: {Server}. Database: {Database}.",
+    connectionStringSource,
+    connectionStringInfo.Server,
+    connectionStringInfo.Database);
+
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
@@ -92,9 +114,78 @@ app.MapCustomerOrderEndpoints();
 app.MapAgentCommerceEndpoints();
 
 // Initialize the database and generate embeddings on startup.
+await WaitForSqlServerAsync(connectionString, app.Logger);
 await app.InitializeDatabaseAsync();
 
 app.Run();
+
+static async Task WaitForSqlServerAsync(string connectionString, ILogger logger)
+{
+    var builder = new SqlConnectionStringBuilder(connectionString);
+    var dataSource = builder.DataSource?.Trim();
+
+    if (string.IsNullOrWhiteSpace(dataSource))
+    {
+        return;
+    }
+
+    var host = dataSource;
+    var delimiterIndex = host.IndexOf(',');
+    if (delimiterIndex >= 0)
+    {
+        host = host[..delimiterIndex];
+    }
+
+    if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) || host == "127.0.0.1" || host == "::1")
+    {
+        return;
+    }
+
+    var timeout = TimeSpan.FromSeconds(60);
+    var stopAt = DateTime.UtcNow + timeout;
+    var attempt = 0;
+
+    while (true)
+    {
+        attempt++;
+
+        try
+        {
+            logger.LogInformation("Checking SQL Server host resolution for '{Host}' (attempt {Attempt})...", host, attempt);
+            var addresses = await Dns.GetHostAddressesAsync(host);
+            if (addresses.Length > 0)
+            {
+                logger.LogInformation("SQL Server host '{Host}' resolved successfully to {Addresses}.", host, string.Join(',', addresses));
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "SQL Server host '{Host}' could not be resolved on attempt {Attempt}.", host, attempt);
+        }
+
+        if (DateTime.UtcNow >= stopAt)
+        {
+            logger.LogError("Timed out waiting for SQL Server host '{Host}' to resolve after {Timeout}s.", host, timeout.TotalSeconds);
+            break;
+        }
+
+        await Task.Delay(TimeSpan.FromSeconds(5));
+    }
+}
+
+static (string Server, string Database) GetConnectionStringInfo(string value)
+{
+    try
+    {
+        var builder = new SqlConnectionStringBuilder(value);
+        return (builder.DataSource, builder.InitialCatalog);
+    }
+    catch
+    {
+        return ("<unparsed>", "<unparsed>");
+    }
+}
 
 namespace Products
 {

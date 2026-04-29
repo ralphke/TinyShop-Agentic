@@ -2,7 +2,7 @@
 
 **Version:** 1.0  
 **Target Framework:** .NET 10 
-**Last Updated:** 2025
+**Last Updated:** 2026
 
 ---
 
@@ -22,7 +22,7 @@
 
 ## Overview
 
-TinyShop is a modern e-commerce demonstration application built with .NET 9, showcasing best practices for building cloud-native applications using:
+TinyShop is a modern e-commerce demonstration application built with .NET 10, showcasing best practices for building cloud-native applications using:
 
 - **Backend API**: ASP.NET Core Minimal APIs with Entity Framework Core
 - **Frontend**: Blazor Server for interactive web UI
@@ -591,7 +591,7 @@ dotnet run
 ### First-Time Setup
 
 On first run, the application will:
-1. Create the `TestDB` database in LocalDB
+1. Create the `TinyShopDB` database in sqlserver:1433
 2. Apply database schema
 3. Seed 9 sample products
 4. Products will have no images initially
@@ -726,8 +726,8 @@ When changing the `Product` model:
 ```json
 {
   "ConnectionStrings": {
-    "ProductsDb": "Server=(localdb)\\MSSQLLocalDB;Database=TestDB;
-                   Integrated Security=true;TrustServerCertificate=True;"
+    "TinyShopDB": "Server=sqlserver:1433;Database=TinyShopDB;
+                   Integrated Security=false;TrustServerCertificate=True;"
   },
   "Logging": {
     "LogLevel": {

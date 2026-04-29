@@ -1,8 +1,12 @@
 services:
   sqlserver:
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: Dockerfile.sqlserver
+      platforms:
+        - linux/amd64
     container_name: tinyshop-sqlserver
     environment:
       ACCEPT_EULA: Y
@@ -19,32 +23,43 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    restart: unless-stopped
 
   init-db:
+    # The init-db service runs after sqlserver is healthy and performs database initialization.
+    # sqlserver itself starts normally via the SQL Server entrypoint and should not be given the init script as a command.
+    env_file:
+      - .env
+    image: tinyshop-agentic-init-db:latest
     build:
       context: ./src/Products/SQL
       dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: tinyshop-sql-init
+    volumes:
+      - ./src/Products/wwwroot/images:/usr/src/sql/images:ro
     depends_on:
       sqlserver:
         condition: service_healthy
-      embeddings:
-        condition: service_started
     environment:
+      ACCEPT_EULA: Y
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
-      EMBEDDINGS_URL: http://embeddings:80/embed
-    volumes:
-      - ./src/Products/SQL:/usr/src/sql/init:ro
-    entrypoint: /bin/bash
     command: ["/usr/src/sql/init/init-db.sh"]
     restart: "no"
 
   products:
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: src/Products/Dockerfile
     container_name: tinyshop-products
     depends_on:
+      sqlserver:
+        condition: service_healthy
       init-db:
         condition: service_completed_successfully
       embeddings:
@@ -53,13 +68,15 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_HTTP_PORTS: "8080"
       EnableHttpsRedirection: "false"
-      ConnectionStrings__ProductsDb: ${PRODUCTS_DB_CONNECTION_STRING}
+      ConnectionStrings__TinyShopDB: "Server=sqlserver,1433;Database=TinyShopDB;User Id=TinyShopUser;Password=P@ssw0rd123!;TrustServerCertificate=True;Encrypt=False;"
       EMBEDDING_SERVICE__ENDPOINT: http://embeddings/embed
     ports:
       - "5228:8080"
     restart: on-failure
 
   store:
+    env_file:
+      - .env
     build:
       context: .
       dockerfile: src/Store/Dockerfile
@@ -83,7 +100,9 @@ services:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
     ports:
       - "8001:80"
-    command: --model-id sentence-transformers/all-mpnet-base-v2
+    command:
+      - --model-id
+      - sentence-transformers/all-mpnet-base-v2
     volumes:
       - model-cache:/data
     environment:

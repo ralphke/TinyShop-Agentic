@@ -60,8 +60,7 @@ public sealed class ProductSearchService
         var queryEmbedding = await _embeddings.EmbedTextAsync(query);
 
         // Check if any products have embeddings
-        var hasAnyEmbeddings = await _context.Product
-            .AnyAsync(p => p.DescriptionEmbedding != null);
+        var hasAnyEmbeddings = await _context.HasAnyEmbeddingsAsync();
 
         if (!hasAnyEmbeddings)
         {
@@ -72,16 +71,29 @@ public sealed class ProductSearchService
         // Vector similarity search: find products with highest cosine similarity
         // NOTE: SQL Server 2024+ supports vector search natively with vector_distance function
         // For earlier versions, fetch all products and score in memory
-        var products = await _context.Product.ToListAsync();
+        var products = await _context.LoadProductsWithVectorsAsync();
+
+        // Name matches are higher-signal than description matches; weight them accordingly.
+        const float nameWeight = 0.6f;
+        const float descriptionWeight = 0.4f;
 
         var scoredProducts = new List<(Product Product, float Score)>();
         foreach (var product in products)
         {
-            if (product.DescriptionEmbedding is { } embedding)
-            {
-                var score = CosineSimilarity(queryEmbedding, embedding);
-                scoredProducts.Add((product, score));
-            }
+            float nameScore = product.NameVector is { } nv ? CosineSimilarity(queryEmbedding, nv) : 0f;
+            float descScore = product.DescriptionVector is { } dv ? CosineSimilarity(queryEmbedding, dv) : 0f;
+
+            float score;
+            if (product.NameVector is not null && product.DescriptionVector is not null)
+                score = nameWeight * nameScore + descriptionWeight * descScore;
+            else if (product.NameVector is not null)
+                score = nameScore;
+            else if (product.DescriptionVector is not null)
+                score = descScore;
+            else
+                continue; // no vectors at all — skip
+
+            scoredProducts.Add((product, score));
         }
 
         var scored = scoredProducts

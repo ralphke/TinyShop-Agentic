@@ -1,6 +1,9 @@
+using System.Data;
 using DataEntities;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Products.Services;
 using System.Text.Json;
@@ -27,6 +30,91 @@ public class ProductDataContext : DbContext
     public DbSet<AgentCartItem> AgentCartItems { get; set; } = default!;
 
     public DbSet<AgentRequestAudit> AgentRequestAudits { get; set; } = default!;
+
+    public async Task UpsertProductVectorsAsync(int productId, float[]? descriptionVector, float[]? nameVector)
+    {
+        var descriptionJson = descriptionVector is { } desc ? JsonSerializer.Serialize(desc) : null;
+        var nameJson = nameVector is { } nameValue ? JsonSerializer.Serialize(nameValue) : null;
+
+        if (descriptionJson is { } description)
+        {
+            ValidateVectorJson(description, productId, nameof(descriptionVector));
+        }
+
+        if (nameJson is { } name)
+        {
+            ValidateVectorJson(name, productId, nameof(nameVector));
+        }
+
+        var connection = (SqlConnection)Database.GetDbConnection();
+        var closeConnection = false;
+        try
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+                closeConnection = true;
+            }
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = "EXEC dbo.usp_UpsertProductVector @ProductId, @DescriptionVector, @NameVector";
+            command.CommandType = CommandType.Text;
+            command.Parameters.Add(new SqlParameter("@ProductId", SqlDbType.Int) { Value = productId });
+            command.Parameters.Add(new SqlParameter("@DescriptionVector", SqlDbType.NVarChar, -1) { Value = (object?)descriptionJson ?? DBNull.Value });
+            command.Parameters.Add(new SqlParameter("@NameVector", SqlDbType.NVarChar, -1) { Value = (object?)nameJson ?? DBNull.Value });
+
+            await command.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            if (closeConnection && connection.State == ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
+    }
+
+    private static void ValidateVectorJson(string json, int productId, string parameterName)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new InvalidOperationException($"Embedding JSON for product {productId} must be an array, but was {document.RootElement.ValueKind}.");
+            }
+
+            var count = 0;
+            var allZero = true;
+            foreach (var element in document.RootElement.EnumerateArray())
+            {
+                if (element.ValueKind != JsonValueKind.Number)
+                {
+                    throw new InvalidOperationException($"Embedding JSON for product {productId} contains non-numeric values.");
+                }
+
+                count++;
+                if (element.GetSingle() != 0f)
+                {
+                    allZero = false;
+                }
+            }
+
+            if (count != 768)
+            {
+                throw new InvalidOperationException($"Embedding JSON for product {productId} must contain 768 values, but contained {count}.");
+            }
+
+            if (allZero)
+            {
+                throw new InvalidOperationException($"Embedding JSON for product {productId} contains an invalid all-zero embedding vector.");
+            }
+        }
+        catch (JsonException ex)
+        {
+            throw new InvalidOperationException($"Invalid JSON for {parameterName} when updating product {productId}.", ex);
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,6 +143,23 @@ public class ProductDataContext : DbContext
             entity.Property(e => e.Price).HasColumnType("decimal(18,2)");
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
             entity.Property(e => e.ImageData).HasColumnType("varbinary(max)");
+
+            if (Database.IsSqlServer())
+            {
+                entity.Ignore(e => e.DescriptionVector);
+                entity.Ignore(e => e.NameVector);
+            }
+            else
+            {
+                entity.Property(e => e.DescriptionVector)
+                    .HasConversion(embeddingConverter, embeddingComparer)
+                    .HasColumnType("nvarchar(max)");
+
+                entity.Property(e => e.NameVector)
+                    .HasConversion(embeddingConverter, embeddingComparer)
+                    .HasColumnType("nvarchar(max)");
+            }
+
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.ModifiedDate).HasDefaultValueSql("GETUTCDATE()");
             entity.HasIndex(e => e.Name).HasDatabaseName("IX_Products_Name");
@@ -178,6 +283,10 @@ public static class Extensions
             {
                 await DbInitializer.InitializeAsync(context, logger, embeddingService);
             }
+            else
+            {
+                await DbInitializer.LoadImagesAsync(context, logger);
+            }
 
             await EnsureProductEmbeddingsAsync(context, embeddingService, logger);
 
@@ -262,11 +371,35 @@ public static class Extensions
                     Price DECIMAL(18,2) NOT NULL,
                     ImageUrl NVARCHAR(500) NULL,
                     ImageData VARBINARY(MAX) NULL,
-                    DescriptionVector VECTOR(1536, FLOAT32) NULL,
-                    DetailsVector VECTOR(1536, FLOAT32) NULL,
+                    DescriptionVector VECTOR(768, FLOAT32) NULL,
+                    NameVector VECTOR(768, FLOAT32) NULL,
                     CreatedDate DATETIME2 NOT NULL CONSTRAINT DF_Products_CreatedDate DEFAULT SYSUTCDATETIME(),
                     ModifiedDate DATETIME2 NOT NULL CONSTRAINT DF_Products_ModifiedDate DEFAULT SYSUTCDATETIME()
                 );
+            END;
+            """);
+
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            IF OBJECT_ID(N'dbo.Products', N'U') IS NOT NULL
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = N'dbo' AND TABLE_NAME = N'Products' AND COLUMN_NAME = N'DescriptionVector')
+                BEGIN
+                    ALTER TABLE dbo.Products DROP COLUMN DescriptionVector;
+                END;
+
+                IF EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = N'dbo' AND TABLE_NAME = N'Products' AND COLUMN_NAME = N'NameVector')
+                BEGIN
+                    ALTER TABLE dbo.Products DROP COLUMN NameVector;
+                END;
+
+                ALTER TABLE dbo.Products ADD DescriptionVector VECTOR(768, FLOAT32) NULL;
+                ALTER TABLE dbo.Products ADD NameVector VECTOR(768, FLOAT32) NULL;
+            END;
             """);
 
         await context.Database.ExecuteSqlRawAsync(
@@ -417,6 +550,204 @@ public static class Extensions
                 CREATE INDEX IX_AgentRequestAudits_Agent_Created ON dbo.AgentRequestAudits(AgentId, CreatedDate);
             END;
             """);
+
+        await context.Database.ExecuteSqlRawAsync(
+            """
+            CREATE OR ALTER PROCEDURE dbo.usp_UpsertProductVector
+                @ProductId INT,
+                @DescriptionVector NVARCHAR(MAX) = NULL,
+                @NameVector NVARCHAR(MAX) = NULL
+            AS
+            BEGIN
+                SET NOCOUNT ON;
+                UPDATE dbo.Products
+                SET
+                    DescriptionVector = CASE WHEN @DescriptionVector IS NOT NULL THEN CAST(@DescriptionVector AS VECTOR(768, FLOAT32)) ELSE DescriptionVector END,
+                    NameVector = CASE WHEN @NameVector IS NOT NULL THEN CAST(@NameVector AS VECTOR(768, FLOAT32)) ELSE NameVector END
+                WHERE Id = @ProductId;
+            END;
+            """);
+    }
+
+    public static async Task<List<int>> GetProductIdsMissingEmbeddingsAsync(this ProductDataContext context)
+    {
+        if (!context.Database.IsSqlServer())
+        {
+            return await context.Product
+                .Where(product => product.DescriptionVector == null || product.NameVector == null)
+                .Select(product => product.Id)
+                .ToListAsync();
+        }
+
+        var ids = new List<int>();
+        var connection = context.Database.GetDbConnection();
+        var closeConnection = false;
+
+        try
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+                closeConnection = true;
+            }
+
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT Id,
+                       CAST(DescriptionVector AS NVARCHAR(MAX)) AS DescriptionVector,
+                       CAST(NameVector AS NVARCHAR(MAX)) AS NameVector
+                FROM dbo.Products;
+                """;
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var productId = reader.GetInt32(0);
+                var descriptionJson = reader.IsDBNull(1) ? null : reader.GetString(1);
+                var nameJson = reader.IsDBNull(2) ? null : reader.GetString(2);
+
+                if (!HasValidEmbedding(descriptionJson) || !HasValidEmbedding(nameJson))
+                {
+                    ids.Add(productId);
+                }
+            }
+        }
+        finally
+        {
+            if (closeConnection && connection.State == ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
+
+        return ids;
+    }
+
+    private static bool HasValidEmbedding(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return false;
+        }
+
+        try
+        {
+            var vector = JsonSerializer.Deserialize<float[]>(json);
+            return vector != null && vector.Length == 768 && vector.Any(value => value != 0f);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public static async Task<bool> HasAnyEmbeddingsAsync(this ProductDataContext context)
+    {
+        if (!context.Database.IsSqlServer())
+        {
+            return await context.Product.AnyAsync(product => product.DescriptionVector != null);
+        }
+
+        var connection = context.Database.GetDbConnection();
+        var closeConnection = false;
+
+        try
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+                closeConnection = true;
+            }
+
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT Id,
+                       CAST(DescriptionVector AS NVARCHAR(MAX)) AS DescriptionVector,
+                       CAST(NameVector AS NVARCHAR(MAX)) AS NameVector
+                FROM dbo.Products;
+                """;
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var descriptionJson = reader.IsDBNull(1) ? null : reader.GetString(1);
+                var nameJson = reader.IsDBNull(2) ? null : reader.GetString(2);
+                if (HasValidEmbedding(descriptionJson) || HasValidEmbedding(nameJson))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        finally
+        {
+            if (closeConnection && connection.State == ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
+    }
+
+    public static async Task<List<Product>> LoadProductsWithVectorsAsync(this ProductDataContext context)
+    {
+        if (!context.Database.IsSqlServer())
+        {
+            return await context.Product.ToListAsync();
+        }
+
+        var products = await context.Product.ToListAsync();
+        var vectorMap = new Dictionary<int, (string? Description, string? Name)>();
+
+        var connection = context.Database.GetDbConnection();
+        var closeConnection = false;
+
+        try
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+                closeConnection = true;
+            }
+
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                SELECT Id,
+                       CAST(DescriptionVector AS NVARCHAR(MAX)) AS DescriptionVector,
+                       CAST(NameVector AS NVARCHAR(MAX)) AS NameVector
+                FROM dbo.Products;
+                """;
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var id = reader.GetInt32(0);
+                var descriptionJson = reader.IsDBNull(1) ? null : reader.GetString(1);
+                var nameJson = reader.IsDBNull(2) ? null : reader.GetString(2);
+                vectorMap[id] = (descriptionJson, nameJson);
+            }
+        }
+        finally
+        {
+            if (closeConnection && connection.State == ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
+
+        foreach (var product in products)
+        {
+            if (vectorMap.TryGetValue(product.Id, out var vectorJson))
+            {
+                product.DescriptionVector = vectorJson.Description is null ? null : JsonSerializer.Deserialize<float[]>(vectorJson.Description);
+                product.NameVector = vectorJson.Name is null ? null : JsonSerializer.Deserialize<float[]>(vectorJson.Name);
+            }
+        }
+
+        return products;
     }
 
     private static async Task EnsureProductDetailsAsync(ProductDataContext context)
@@ -441,14 +772,15 @@ public static class Extensions
 
     private static async Task EnsureProductEmbeddingsAsync(ProductDataContext context, IEmbeddingService embeddingService, ILogger logger)
     {
-        var productsNeedingEmbeddings = await context.Product
-            .Where(product => product.DescriptionVector == null || product.DetailsVector == null)
-            .ToListAsync();
-
-        if (productsNeedingEmbeddings.Count == 0)
+        var missingIds = await context.GetProductIdsMissingEmbeddingsAsync();
+        if (missingIds.Count == 0)
         {
             return;
         }
+
+        var productsNeedingEmbeddings = await context.Product
+            .Where(product => missingIds.Contains(product.Id))
+            .ToListAsync();
 
         foreach (var product in productsNeedingEmbeddings)
         {
@@ -456,6 +788,11 @@ public static class Extensions
         }
 
         await context.SaveChangesAsync();
+
+        foreach (var product in productsNeedingEmbeddings)
+        {
+            await context.UpsertProductVectorsAsync(product.Id, product.DescriptionVector, product.NameVector);
+        }
     }
 
     private static async Task GenerateProductEmbeddingsAsync(Product product, IEmbeddingService embeddingService, ILogger logger)
@@ -471,12 +808,12 @@ public static class Extensions
                 }
             }
 
-            if (product.DetailsVector == null)
+            if (product.NameVector == null)
             {
-                var DetailsText = BuildNameEmbeddingText(product);
-                if (!string.IsNullOrWhiteSpace(DetailsText))
+                var nameText = BuildNameEmbeddingText(product);
+                if (!string.IsNullOrWhiteSpace(nameText))
                 {
-                    product.DetailsVector = await embeddingService.EmbedTextAsync(DetailsText);
+                    product.NameVector = await embeddingService.EmbedTextAsync(nameText);
                 }
             }
 
@@ -504,7 +841,7 @@ public static class Extensions
 
     private static string BuildEmbeddingText(Product product)
     {
-        return string.Join(' ', new[] { product.Name, product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
+        return string.Join(' ', new[] { product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
     }
 
     private static string BuildNameEmbeddingText(Product product)
@@ -534,12 +871,17 @@ public static class DbInitializer
 
         foreach (var product in products)
         {
-            product.DescriptionEmbedding = await embeddingService.EmbedTextAsync(BuildEmbeddingText(product));
-            product.NameEmbedding = await embeddingService.EmbedTextAsync(BuildNameEmbeddingText(product));
+            product.DescriptionVector = await embeddingService.EmbedTextAsync(BuildEmbeddingText(product));
+            product.NameVector = await embeddingService.EmbedTextAsync(BuildNameEmbeddingText(product));
         }
 
         context.Product.AddRange(products);
         await context.SaveChangesAsync();
+
+        foreach (var product in products)
+        {
+            await context.UpsertProductVectorsAsync(product.Id, product.DescriptionVector, product.NameVector);
+        }
 
         await LoadImagesAsync(context, logger);
 
@@ -549,7 +891,7 @@ public static class DbInitializer
 
     private static string BuildEmbeddingText(Product product)
     {
-        return string.Join(' ', new[] { product.Name, product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
+        return string.Join(' ', new[] { product.Description, product.Details }.Where(v => !string.IsNullOrWhiteSpace(v)));
     }
 
     private static string BuildNameEmbeddingText(Product product)
@@ -562,27 +904,55 @@ public static class DbInitializer
         try
         {
             var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
-
             if (!Directory.Exists(imagesPath))
             {
-                logger.LogWarning("Images directory not found: {Path}", imagesPath);
-                return;
+                var altPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "images");
+                if (Directory.Exists(altPath))
+                {
+                    imagesPath = altPath;
+                }
+                else
+                {
+                    logger.LogWarning("Images directory not found: {Path} or {AltPath}", imagesPath, altPath);
+                    return;
+                }
             }
 
             var products = await context.Product.OrderBy(p => p.Id).ToListAsync();
-            for (var index = 0; index < products.Count && index < 9; index++)
+            var changed = false;
+            foreach (var product in products)
             {
-                var imageFile = Path.Combine(imagesPath, $"product{index + 1}.png");
+                if (product.ImageData != null && product.ImageData.Length > 0)
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(product.ImageUrl))
+                {
+                    logger.LogWarning("Product {Id} has no ImageUrl configured, skipping image load.", product.Id);
+                    continue;
+                }
+
+                var imageRelativePath = product.ImageUrl.TrimStart('/', '\\');
+                if (imageRelativePath.StartsWith("images" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) ||
+                    imageRelativePath.StartsWith("images/", StringComparison.OrdinalIgnoreCase) ||
+                    imageRelativePath.StartsWith("images\\", StringComparison.OrdinalIgnoreCase))
+                {
+                    imageRelativePath = imageRelativePath.Substring("images".Length).TrimStart('/', '\\');
+                }
+
+                var imageFile = Path.Combine(imagesPath, imageRelativePath.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar));
                 if (!File.Exists(imageFile))
                 {
-                    logger.LogWarning("Image file not found: {File}", imageFile);
+                    logger.LogWarning("Image file not found for product {Id}: {File}", product.Id, imageFile);
                     continue;
                 }
 
                 try
                 {
-                    products[index].ImageData = await File.ReadAllBytesAsync(imageFile);
-                    logger.LogInformation("Loaded image for product {Id}: {File}", products[index].Id, imageFile);
+                    product.ImageData = await File.ReadAllBytesAsync(imageFile);
+                    changed = true;
+                    logger.LogInformation("Loaded image for product {Id}: {File}", product.Id, imageFile);
                 }
                 catch (Exception ex)
                 {
@@ -590,7 +960,10 @@ public static class DbInitializer
                 }
             }
 
-            await context.SaveChangesAsync();
+            if (changed)
+            {
+                await context.SaveChangesAsync();
+            }
         }
         catch (Exception ex)
         {
