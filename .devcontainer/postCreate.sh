@@ -43,6 +43,16 @@ sudo chmod +x /usr/local/bin/sqlcmd /usr/local/bin/sqlcmd_debug
 
 echo "  sqlcmd $(/usr/local/bin/sqlcmd --version 2>/dev/null || true)"
 
+echo ""
+echo "▶ Configuring Docker socket access..."
+if getent group docker >/dev/null 2>&1; then
+  echo "Adding $(id -un) to docker group..."
+  sudo usermod -aG docker "$(id -un)"
+  echo "  User added to docker group. Rebuild/reopen the container if Docker access still fails."
+else
+  echo "  Docker group not found; socket access may still require sudo."
+fi
+
 # ── Dev certificate ─────────────────────────────────────────────────────────
 echo ""
 echo "▶ Trusting development certificate..."
