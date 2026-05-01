@@ -38,7 +38,7 @@ No local tools required. Everything runs in the cloud.
 
 1. Install [Visual Studio 2026](https://visualstudio.microsoft.com/) with the **ASP.NET and web development** workload and the **.NET Aspire** workload component.
 2. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download) if it is not bundled with your VS installer.
-3. Clone the repository and open **src/TinyShop.sln** (or **TinyShop.AppHost.sln**) in Visual Studio.
+3. Clone the repository and open **src/TinyShop.sln** (or **src/TinyShop.AppHost/TinyShop.AppHost.sln** if you want the AppHost-focused solution) in Visual Studio.
 4. Set **TinyShop.AppHost** as the startup project, then press **F5** (or **Debug → Start Debugging**).
 
    The .NET Aspire AppHost starts all services and opens the Aspire Dashboard automatically.
