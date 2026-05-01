@@ -4,7 +4,10 @@ GitHub Copilot Chat lets you ask questions about your code and receive intellige
 
 ## Open Copilot Chat
 
-1. In VS Code, press `Ctrl+Alt+I` (Windows/Linux) or `Cmd+Ctrl+I` (Mac) to open the **GitHub Copilot Chat** panel, or click the Copilot icon in the Activity Bar.
+| IDE | How to open Copilot Chat |
+|:----|:-------------------------|
+| **VS Code / Codespaces** | Press `Ctrl+Alt+I` (Windows/Linux) or `Cmd+Ctrl+I` (Mac), or click the Copilot icon in the Activity Bar |
+| **Visual Studio 2026** | Click the **Copilot icon** in the top bar and select **Open Chat Window**, or press `Ctrl+\, Ctrl+C` |
 
 ## Ask questions about the project
 

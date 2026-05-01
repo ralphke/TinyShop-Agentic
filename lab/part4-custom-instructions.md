@@ -13,8 +13,12 @@ A well-crafted instructions file eliminates these mismatches for every developer
 
 ## Review the existing instructions file
 
-1. In the Explorer panel, open **.github/copilot-instructions.md**.
-1. Read the existing content — it describes the architecture, dev container, running, testing, and coding conventions.
+| IDE | How to open the file |
+|:----|:---------------------|
+| **VS Code / Codespaces** | In the **Explorer** panel, open **.github/copilot-instructions.md** |
+| **Visual Studio 2026** | In **Solution Explorer**, expand **Solution Items** and open **copilot-instructions.md** |
+
+Read the existing content — it describes the architecture, dev container, running, testing, and coding conventions.
 
 ## Extend the instructions
 
@@ -34,4 +38,5 @@ A well-crafted instructions file eliminates these mismatches for every developer
 1. Compare the response to what you received before. Notice how the suggestions now align with the conventions in the instructions file (e.g., `.razor.css` files, FluentAssertions syntax, correct service lifetimes).
 
 **Key Takeaway**: Custom instructions make Copilot's suggestions consistently aligned with your project's standards and architecture, benefiting every developer who works in the repository.
+
 

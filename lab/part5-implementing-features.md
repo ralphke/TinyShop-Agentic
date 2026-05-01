@@ -4,9 +4,10 @@ Copilot Agent mode (also called **Agentic** mode) can make coordinated changes a
 
 ## Switch to Agent mode
 
-1. Open Copilot Chat (`Ctrl+Alt+I` / `Cmd+Ctrl+I`).
-1. Click **+** to start a fresh conversation.
-1. In the model/mode selector at the bottom of the panel, switch from **Ask** to **Agent**.
+| IDE | Steps |
+|:----|:------|
+| **VS Code / Codespaces** | Open Copilot Chat (`Ctrl+Alt+I`) → click **+** → set mode selector to **Agent** |
+| **Visual Studio 2026** | Open Copilot Chat (`Ctrl+\, Ctrl+C`) → click **+** → switch mode selector to **Agent** |
 
 ## Implement a product listing page
 
@@ -42,7 +43,9 @@ Copilot Agent mode (also called **Agentic** mode) can make coordinated changes a
    }
    ```
 
-1. Run the app (`aspire run`) and verify the product grid renders correctly.
+1. Run the app and verify the product grid renders correctly:
+   - **VS Code / Codespaces**: `aspire run`
+   - **Visual Studio 2026**: Press **F5**
 1. Stop the app when done.
 
 ## Let Agent implement a new feature end-to-end
@@ -56,4 +59,5 @@ Copilot Agent mode (also called **Agentic** mode) can make coordinated changes a
 1. Test the feature in the running app.
 
 **Key Takeaway**: Copilot Agent mode can implement complete features spanning multiple files based on a natural-language description, compressing hours of boilerplate work into minutes.
+
 

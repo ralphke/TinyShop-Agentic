@@ -2,7 +2,7 @@
 
 ## Environment options
 
-You have two ways to run this lab — pick the one that suits you best.
+You have three ways to run this lab — pick the one that suits you best.
 
 ### Option A — GitHub Codespaces (recommended)
 
@@ -34,16 +34,37 @@ No local tools required. Everything runs in the cloud.
    aspire run
    ```
 
+### Option C — Visual Studio 2026
+
+1. Install [Visual Studio 2026](https://visualstudio.microsoft.com/) with the **ASP.NET and web development** workload and the **.NET Aspire** workload component.
+2. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download) if it is not bundled with your VS installer.
+3. Clone the repository and open **src/TinyShop.sln** (or **TinyShop.AppHost.sln**) in Visual Studio.
+4. Set **TinyShop.AppHost** as the startup project, then press **F5** (or **Debug → Start Debugging**).
+
+   The .NET Aspire AppHost starts all services and opens the Aspire Dashboard automatically.
+
 ## Configure GitHub Copilot
 
-1. In VS Code, open the **Extensions** panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+### VS Code / Codespaces
+
+1. Open the **Extensions** panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
 2. Search for **GitHub Copilot** and ensure the extension is installed and enabled.
-3. Sign in with your GitHub account when prompted. A Free-tier Copilot subscription is sufficient.
-4. Verify that the Copilot status icon in the bottom-right of VS Code is active (not grayed out).
+3. Sign in with your GitHub account when prompted.
+4. Verify that the Copilot status icon in the bottom-right is active (not grayed out).
+
+### Visual Studio 2026
+
+GitHub Copilot is integrated into the VS 2026 shell — no separate extension install is needed.
+
+1. Click the **Copilot icon** in the top bar (left side, next to the search box).
+2. Click **Sign in to use Copilot**.
+3. A browser window opens; sign in with your GitHub account and click **Authorize Visual Studio**.
+4. When the browser asks to open Visual Studio, click **Open**.
+5. The Copilot icon turns green when sign-in succeeds.
 
 ## Explore the running application
 
-Once `aspire run` starts all services, the following ports are forwarded:
+Once the app is running, the following ports are forwarded (Aspire) or available (Docker Compose):
 
 | Service         | URL                                  |
 |:----------------|:-------------------------------------|
@@ -68,8 +89,3 @@ Store.Tests/        → Unit & component tests
 
 You're all set — proceed to [Part 0: Exploring the Codebase](part0-exploring-codebase.md).
 
-1. [] Stop debugging and close the application.
-
-## Summary and next steps
-
-You've now cloned the repository you'll use for this for the rest of the workshop.

@@ -5,13 +5,24 @@ Copilot Vision lets you attach images to a chat message — share a screenshot o
 ## Redesign the product grid from an image
 
 1. Open Copilot Chat and start a new **Agent** mode conversation.
-1. Click the **paperclip / attach** icon in the chat input box and select an image. Use the **eshop.png** file in the root of the repository as a design reference.
+
+1. Attach the design reference image:
+
+   | IDE | How to attach an image |
+   |:----|:-----------------------|
+   | **VS Code / Codespaces** | Click the **paperclip / attach** icon in the chat input box and select the file |
+   | **Visual Studio 2026** | Click the **+** button in the chat input, select **Upload image**, and select the file |
+
+   Use the **eshop.png** file in the root of the repository as the design reference.
+
 1. Ask:
    ```
    Update Products.razor to display products in a card grid layout similar to this image. Add hover effects, keep it responsive, and put all styles in Products.razor.css.
    ```
 1. Review the proposed changes to **Products.razor** and **Products.razor.css**.
-1. Accept the changes and run the app (`aspire run`) to see the result.
+1. Accept the changes and run the app to see the result:
+   - **VS Code / Codespaces**: `aspire run`
+   - **Visual Studio 2026**: Press **F5**
 1. If the layout isn't quite right, iterate:
    ```
    The card images are too tall. Constrain them to 200px height with object-fit: cover.
@@ -29,4 +40,5 @@ Copilot Vision lets you attach images to a chat message — share a screenshot o
 1. Review Copilot's diagnosis and suggested fix.
 
 **Key Takeaway**: Copilot Vision bridges the gap between design and code — attach any image and Copilot will reason about it alongside your source files.
+
 

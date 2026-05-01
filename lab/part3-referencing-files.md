@@ -2,12 +2,16 @@
 
 In this section you'll learn how to attach files and symbols to a Copilot Chat conversation to get more accurate, project-specific suggestions.
 
+## Open a new chat in Ask mode
+
+| IDE | Steps |
+|:----|:------|
+| **VS Code / Codespaces** | Open Copilot Chat (`Ctrl+Alt+I` / `Cmd+Ctrl+I`) → click **+** → set mode to **Ask** |
+| **Visual Studio 2026** | Open Copilot Chat (`Ctrl+\, Ctrl+C`) → click the **+** new-chat icon → set mode to **Ask** |
+
 ## Reference a file with `#file`
 
-1. Open the Copilot Chat panel (`Ctrl+Alt+I` / `Cmd+Ctrl+I`).
-1. Start a new chat by clicking the **+** icon at the top of the panel.
-1. Make sure the mode is set to **Ask** (not Agent).
-1. Type the following prompt, using `#file` to attach the service:
+1. In the chat input, type the following prompt using `#file` to attach the service:
 
    ```
    #file:ProductService.cs How would I implement displaying products in a table, including the CSS needed?
@@ -27,5 +31,8 @@ In this section you'll learn how to attach files and symbols to a Copilot Chat c
 
 1. Observe how Copilot answers based on the real implementation rather than guessing.
 
+> **Visual Studio 2026 tip:** You can also drag a file from the **Solution Explorer** directly into the Copilot Chat input box to attach it as context, in addition to using `#file`.
+
 **Key Takeaway**: Attaching files and symbols with `#file` and `#sym` provides Copilot with the exact context it needs to give accurate, project-specific suggestions instead of generic examples.
+
 

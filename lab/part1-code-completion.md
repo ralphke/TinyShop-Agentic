@@ -6,7 +6,10 @@ In this section you'll use GitHub Copilot's inline code completion (Ghost Text) 
 
 ## Add a new endpoint
 
-1. In the Explorer panel, open **Products/Endpoints/ProductEndpoints.cs**.
+| IDE | How to open the file |
+|:----|:---------------------|
+| **VS Code / Codespaces** | In the **Explorer** panel, open **Products/Endpoints/ProductEndpoints.cs** |
+| **Visual Studio 2026** | In **Solution Explorer**, expand the **Products** project and open **Endpoints/ProductEndpoints.cs** |
 
 1. Inside the `MapProductEndpoints` method, place your cursor on an empty line after the existing endpoints and start typing:
    ```csharp
@@ -39,6 +42,15 @@ In this section you'll use GitHub Copilot's inline code completion (Ghost Text) 
 
    > Because LLMs are probabilistic, the exact suggestion may differ. Any working implementation is fine.
 
+   Alternatively, use Copilot Agent mode to implement the remaining endpoints all at once:
+
+   | IDE | How to switch to Agent mode |
+   |:----|:----------------------------|
+   | **VS Code / Codespaces** | Open Copilot Chat → click **+** → set mode to **Agent** |
+   | **Visual Studio 2026** | Open Copilot Chat → click **+** → switch mode selector to **Agent** |
+
+   Then ask: `Can you implement the rest of the CRUD endpoints for the Product API?`
+
 ## Try Next Edit Suggestions (NES)
 
 1. In the `GET /{id}` endpoint, rename the parameter from `id` to `productId`.
@@ -51,9 +63,12 @@ In this section you'll use GitHub Copilot's inline code completion (Ghost Text) 
 
 ## Test your changes
 
-1. Run the app: `aspire run`
+1. Run the app:
+   - **VS Code / Codespaces**: `aspire run` in the terminal
+   - **Visual Studio 2026**: Press **F5** (or **Debug → Start Debugging**)
 1. Open the Products API URL from the Aspire Dashboard and navigate to `/api/Product/1` to verify your new endpoint.
 1. Stop the app when done.
 
 **Key Takeaway**: Ghost Text and Next Edit Suggestions let you implement complete API methods from minimal keystrokes, significantly accelerating development.
+
 

@@ -4,13 +4,17 @@
 
 # TinyShop-Agentic — Hands-on with GitHub Copilot Agentic Features
 
-TinyShop-Agentic is a .NET Aspire cloud-native e-commerce sample that demonstrates GitHub Copilot's agentic capabilities. You'll explore the codebase, complete features, and extend the application using Copilot Chat, Agent mode, Vision, and custom instructions — all from VS Code or GitHub Codespaces.
+TinyShop-Agentic is a .NET Aspire cloud-native e-commerce sample that demonstrates GitHub Copilot's agentic capabilities. You'll explore the codebase, complete features, and extend the application using Copilot Chat, Agent mode, Vision, and custom instructions — from VS Code, GitHub Codespaces, or Visual Studio 2026.
 
 ## Prerequisites
 
-- [VS Code](https://code.visualstudio.com/) with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension, **or** a [GitHub Codespace](https://github.com/features/codespaces)
-- GitHub account with a Copilot subscription (Free tier is sufficient)
-- Docker Desktop (only required for local Dev Container — not needed in Codespaces)
+Pick **one** of the following IDE environments:
+
+- **GitHub Codespaces** — zero local install; runs entirely in the browser (recommended for workshops)
+- **VS Code** with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension + Docker Desktop
+- **Visual Studio 2026** — GitHub Copilot is built into the shell; requires .NET 10 SDK
+
+All options require a GitHub account with a Copilot subscription (Free tier is sufficient).
 
 ## Architecture
 
