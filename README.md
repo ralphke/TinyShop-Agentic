@@ -31,7 +31,7 @@ Tests/TinyShopTest      → MSTest basic tests
 BenchmarkSuite1         → BenchmarkDotNet performance benchmarks
 ```
 
-**Startup order** (enforced by Aspire): `products` → `agent-gateway` → `store`
+**Startup order** (enforced by Aspire): `products` starts first; `agent-gateway` and `store` start after `products` (potentially in parallel)
 
 **Completed features in this workspace:**
 
