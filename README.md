@@ -2,38 +2,77 @@
 <img src="img/banner.jpg" alt="decorative banner" width="1200"/>
 </p>
 
-# LAB300 - Hands-on with GitHub Copilot in Visual Studio 2022
+# TinyShop-Agentic — Hands-on with GitHub Copilot Agentic Features
 
-This lab will guide you through using GitHub Copilot's various features in Visual Studio 2022. You'll start with a partially completed TinyShop application and use GitHub Copilot to complete missing features and enhance the application.
+TinyShop-Agentic is a .NET Aspire cloud-native e-commerce sample that demonstrates GitHub Copilot's agentic capabilities. You'll explore the codebase, complete features, and extend the application using Copilot Chat, Agent mode, Vision, and custom instructions — from VS Code, GitHub Codespaces, or Visual Studio 2026.
 
 ## Prerequisites
 
-- Visual Studio 2022 with GitHub Copilot extension installed
-- starting Visual Studio 2022 >= 17.13, GitHub Copilot is integrated with the VS Shell
-- .NET 10 SDK
-- GitHub account with Copilot subscription (including Free)
-- make sure your nuget packages match the requiements by running the following commnads in the T.\src folder
-- dotnet nuget locals all --clear
-- dotnet restore
-- This will make sure that your donet environment matches the project settings
-- Next you need your browser to trust the development certificates by executing the following command
-- dotnet dev-certs https --trust
-- now all should be setup to work as expected on your computer
-- To clean-up the environment, you can run the following command
-- dotnet dev-certs https --clean
-- This will remove all developer certificates from your machine
+Pick **one** of the following IDE environments:
 
-## Current Workspace Status
+- **GitHub Codespaces** — zero local install; runs entirely in the browser (recommended for workshops)
+- **VS Code** with the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension + Docker Desktop
+- **Visual Studio 2026** — GitHub Copilot is built into the shell; requires .NET 10 SDK
 
-The workspace currently includes the following completed updates:
+All options require a GitHub account with a Copilot subscription (Free tier is sufficient).
 
-- Shopping cart and checkout flow restored in the Store frontend
-- Order confirmation page added
-- Impressum page for RaKeTe-Technology added and linked from the navigation
+## Architecture
+
+```
+TinyShop.AppHost        → Aspire orchestrator; defines all resources and wiring
+DataEntities            → Shared Product model (used by Products API and Store)
+Products                → ASP.NET Core Minimal API; EF Core + SQL Server; port 5228
+Store                   → Blazor Server (Interactive Server Components); port 5158
+AgentGateway            → A2A-compatible REST adapter + MCP server for agent integration
+TinyShop.ServiceDefaults→ Shared OpenTelemetry, health checks, resilience config
+Store.Tests             → xUnit unit/component tests (FluentAssertions, bUnit, Moq)
+Tests/IntegrationTests  → xUnit API + UI integration tests (WebApplicationFactory)
+Tests/TinyShopTest      → MSTest basic tests
+BenchmarkSuite1         → BenchmarkDotNet performance benchmarks
+```
+
+**Startup order** (enforced by Aspire): `products` starts first; `agent-gateway` and `store` start after `products` (potentially in parallel)
+
+**Completed features in this workspace:**
+
+- Shopping cart and checkout flow in the Store frontend
+- Order confirmation page
+- Impressum page for RaKeTe-Technology
+- Agent Gateway service with A2A-compatible REST adapter and MCP server
 - Test projects aligned to .NET 10
-- Docker Compose setup hardened for HTTP-only local runtime and persistent DataProtection keys
+- Docker Compose setup for HTTP-only local runtime with persistent DataProtection keys
 
-## Run with Docker Compose
+## Getting Started
+
+### Option A — GitHub Codespaces (recommended, zero local setup)
+
+1. Click **Code → Codespaces → Create codespace on main** on this repository.
+2. Wait for the container to build (about 2 minutes).
+3. In the VS Code terminal inside the Codespace, run:
+   ```bash
+   aspire run
+   ```
+4. The Aspire Dashboard opens automatically; use the forwarded-port links to reach the Store and Products API.
+
+### Option B — Local Dev Container (VS Code + Docker Desktop)
+
+This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker-in-Docker enabled to support Aspire and other container-based development workflows from inside the development container.
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) and start it.
+2. Clone the repository **inside your WSL filesystem** (e.g. `~/src/TinyShop-Agentic`) — do **not** clone under `/mnt/d/...`.
+3. Open the folder in VS Code.
+4. Run **Dev Containers: Reopen in Container** from the Command Palette.
+5. After the container finishes provisioning, start the app:
+   ```bash
+   aspire run
+   ```
+
+Forwarded ports (HTTP):
+- `15218` — Aspire Dashboard (opens automatically)
+- `5228`  — Products API
+- `5158`  — Store (Blazor)
+
+### Run with Docker Compose (no Aspire)
 
 From the repository root:
 
@@ -54,56 +93,17 @@ Stop the stack:
 docker compose down
 ```
 
-Quick health check:
-
-```powershell
-curl.exe -s -o NUL -w "products:%{http_code}`n" http://localhost:5228/api/Product
-curl.exe -s -o NUL -w "store:%{http_code}`n" http://localhost:5158/
-curl.exe -s -o NUL -w "checkout:%{http_code}`n" http://localhost:5158/checkout
-curl.exe -s -o NUL -w "impressum:%{http_code}`n" http://localhost:5158/impressum
-```
-
 ## Run Tests
 
-Run all test projects explicitly:
-
 ```bash
+# Run all tests
+dotnet test src/TinyShop.sln
+
+# Run individual test projects
 dotnet test src/Store.Tests/Store.Tests.csproj
-dotnet test tests/Store.UnitTests/Store.UnitTests.csproj
-dotnet test tests/Store.IntegrationTests/Store.IntegrationTests.csproj
 dotnet test src/Tests/IntegrationTests/IntegrationTests.csproj
 dotnet test src/Tests/TinyShopTest/TinyShopTest.csproj
 ```
-
-## WSL Dev Container
-
-This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker-in-Docker enabled so Aspire can start its SQL Server container from inside the development container.
-
-Use this workflow on Windows:
-
-1. Install WSL 2 and a Linux distro such as Ubuntu.
-2. Install Docker Desktop and enable WSL integration for that distro.
-3. Clone the repository inside the WSL filesystem, for example under `~/src/TinyShop-Agentic`, instead of working from `/mnt/d/...`.
-4. Open the folder from VS Code in a WSL window.
-5. Run `Dev Containers: Reopen in Container`.
-6. After the container finishes provisioning, start the app with `aspire run`.
-
-Quick verification inside WSL before reopening in the container:
-
-```bash
-docker version
-```
-
-If that command fails in WSL, the dev container will not be able to provision Docker support correctly.
-
-
-## Lab Overview
-
-The TinyShop application consists of two main projects:
-- A backend API built with .NET Minimal APIs
-- A frontend Blazor Server application
-
-You'll use GitHub Copilot's various features to enhance and complete this application.
 
 ## Lab Parts
 
@@ -118,35 +118,10 @@ You'll use GitHub Copilot's various features to enhance and complete this applic
 8. [Debugging with Copilot](lab/part7-debugging-with-copilot.md)
 9. [Commit Summary Descriptions](lab/part8-commit-summary-descriptions.md)
 
-**Key Takeaway**: These tools can significantly boost your productivity as a developer by automating repetitive tasks, generating boilerplate code, and helping you implement complex features more quickly.
+**Key Takeaway**: GitHub Copilot's agentic features can significantly boost your productivity by automating repetitive tasks, generating boilerplate code, and helping you implement complex features across multiple files.
 
-## Session Resources 
+## Session Resources
 
-| Resources          | Links                             | Description        |
-|:-------------------|:----------------------------------|:-------------------|
-| Build session page | https://build.microsoft.com/sessions/LAB300 | Event session page with downloadable recording, slides, resources, and speaker bio |
-|Microsoft Learn|https://aka.ms/AAI_DevAppGitHubCop_Plan|Official Collection or Plan with skilling resources to learn at your own pace|
-
-## Repository Rename Notice
-
-This repository was renamed from **`VS2022-lab300`** to **`TinyShop-Agentic`**.
-
-> **Note:** GitHub does not allow spaces in repository names. The requested name "TinyShop Agentic" was adjusted to the valid slug **`TinyShop-Agentic`**.
-
-GitHub automatically redirects the old URL (`https://github.com/ralphke/VS2022-lab300`) to the new one, but you should update your local remotes to avoid relying on that redirect indefinitely.
-
-### Updating your local clone
-
-Run the following commands in every local clone of this repository:
-
-```bash
-git remote set-url origin https://github.com/ralphke/TinyShop-Agentic.git
-git remote -v   # verify the new URL is set
-```
-
-If you use SSH:
-
-```bash
-git remote set-url origin git@github.com:ralphke/TinyShop-Agentic.git
-git remote -v
-```
+| Resources     | Links                                       | Description                                              |
+|:--------------|:--------------------------------------------|:---------------------------------------------------------|
+| Microsoft Learn | https://aka.ms/AAI_DevAppGitHubCop_Plan   | Official collection with skilling resources to learn at your own pace |

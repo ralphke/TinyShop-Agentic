@@ -1,55 +1,92 @@
-# Workshop setup
+# Workshop Setup
 
-To complete this workshop you will need to clone a repository with a copy of the contents of this repository
+## Environment options
 
-> [!Hint]
-> Under regular conditions you would need to ensure all prequirements, but don't worry. We have ensured this environment as all you need.
+You have three ways to run this lab — pick the one that suits you best.
+
+### Option A — GitHub Codespaces (recommended)
+
+No local tools required. Everything runs in the cloud.
+
+1. Open [https://github.com/ralphke/TinyShop-Agentic](https://github.com/ralphke/TinyShop-Agentic).
+2. Click **Code → Codespaces → Create codespace on main**.
+3. Wait for the container to build (~2 minutes). VS Code opens in your browser.
+4. In the integrated terminal, run:
+   ```bash
+   aspire run
+   ```
+5. The Aspire Dashboard tab opens automatically. Use the links there to navigate to the **Store** and **Products API**.
+
+### Option B — Local Dev Container (VS Code + Docker Desktop)
+
+1. Install [VS Code](https://code.visualstudio.com/) and the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension.
+2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) and start it.
+3. Clone the repository:
+   ```bash
+   git clone https://github.com/ralphke/TinyShop-Agentic.git
+   cd TinyShop-Agentic
+   ```
+   > **Windows users:** Clone inside your WSL filesystem (e.g. `~/src/TinyShop-Agentic`), not under `/mnt/d/...`.
+4. Open the folder in VS Code.
+5. When prompted, click **Reopen in Container** (or run **Dev Containers: Reopen in Container** from the Command Palette).
+6. Once provisioning finishes, start the app:
+   ```bash
+   aspire run
+   ```
+
+### Option C — Visual Studio 2026
+
+1. Install [Visual Studio 2026](https://visualstudio.microsoft.com/) with the **ASP.NET and web development** workload and the **.NET Aspire** workload component.
+2. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download) if it is not bundled with your VS installer.
+3. Clone the repository and open **src/TinyShop.sln** (or **src/TinyShop.AppHost/TinyShop.AppHost.sln** if you want the AppHost-focused solution) in Visual Studio.
+4. Set **TinyShop.AppHost** as the startup project, then press **F5** (or **Debug → Start Debugging**).
+
+   The .NET Aspire AppHost starts all services and opens the Aspire Dashboard automatically.
 
 ## Configure GitHub Copilot
 
-> [!IMPORTANT]
-> For your convenience we have the username and password on the instructions, but you can also see their values in the Resources tab
+### VS Code / Codespaces
 
-<!--For this lab you need a [GitHub account](https://docs.github.com/get-started/learning-about-github/types-of-github-accounts), if you don't have one no worries, you can create a personal account for free. Create your account in the [GitHub sign up page](https://github.com/signup).-->
+1. Open the **Extensions** panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+2. Search for **GitHub Copilot** and ensure the extension is installed and enabled.
+3. Sign in with your GitHub account when prompted.
+4. Verify that the Copilot status icon in the bottom-right is active (not grayed out).
 
-1. [] Open **Edge** and go to `https://github.com/Microsoft-Build-2025`
-1. [] Select **Continue** for Single sign-on to **Skillable Events**
-1. [] Enter +++@lab.CloudPortalCredential(User1).Username+++ on the Email, phone, or Skype input box and click on **Next**
-1. [] Enter +++@lab.CloudPortalCredential(User1).Password+++ on the password field and click on **Sign in**
-1. [] Click on **Yes** when prompted to **Stay signed in**, you will be redirect to the main organization page, you can close the tab.
-1. [] Open Visual Studio 2022
-1. [] Select **Continue without code**, if prompted to sign-in, you can click Close.
-1. [] Click on Copilot icon on top bar (left side next to the search input box)
-    ![Copilot icon](./images/0-copilot-icon.png)
-1. [] Click on **Sign in to use Copilot** option
-1. [] A browser will automatically open, you should already be signed in, click **Continue** for the signed in user.
-10. [] Authorize Visual Studio access to user by clicking on the green **Authorize github* button at the bottom of the page.
-1. [] Click **open**  browser asks for the confirmation (**This site is trying to open Microsoft Visual Studio.**)
-1. [] After Copilot is setup you should now have a **Walkthrough: GitHub Copilot Chat** open tab in Visual Studio and the GitHub Copilot button should be green.
+### Visual Studio 2026
 
-You can close the Walkthrough, we are now ready to start working on our code with the help of Copilot.
+GitHub Copilot is integrated into the VS 2026 shell — no separate extension install is needed.
 
-## Clone lab repository
+1. Click the **Copilot icon** in the top bar (left side, next to the search box).
+2. Click **Sign in to use Copilot**.
+3. A browser window opens; sign in with your GitHub account and click **Authorize Visual Studio**.
+4. When the browser asks to open Visual Studio, click **Open**.
+5. The Copilot icon turns green when sign-in succeeds.
 
-Let's clone the repository you'll use for the lab.
+## Explore the running application
 
-1. [] Click on **File -> Clone Repository** button.
-2. [] Type `https://github.com/dotnet-presentations/build-2025-lab300` and press **Clone**. 
+Once the app is running, the following ports are forwarded by the devcontainer:
 
-The code is now opened in Visual Studio, feel free to take a look at it or skip to the next section to start the app.
+| Service         | URL                                  |
+|:----------------|:-------------------------------------|
+| Aspire Dashboard | http://localhost:15218              |
+| Store (Blazor)  | http://localhost:5158                |
+| Products API    | http://localhost:5228/api/Product    |
+| Checkout        | http://localhost:5158/checkout       |
 
-## Start the app
+> **Agent Gateway**: the AgentGateway port is assigned dynamically by Aspire and is not forwarded by default. To reach it, open the **Aspire Dashboard** (http://localhost:15218) and copy the URL shown next to the **agent-gateway** resource.
 
-1. [] Open the **Solution Explorer** from teh **View -> Solution Explorer** menu.
-1. [] Set the **TinyShop.AppHost** as the startup project if it isn't by right clicking on the **TinyShop.AppHost** and selecting **Set as startup project**  and start the project with F5 or Debug -> Start Debugging from the menu.
+Open the Store in your browser, browse products, and add a few items to the cart.
 
-    The .NET Aspire AppHost will start two applications and the .NET Aspire Dashboard:
+## Project structure at a glance
 
-    - The backend .NET app on **https://localhost:7130**. 
-    - The frontend Blazor app on **http://localhost:7085**. You can see the app by opening that URL from the dashboard
+```
+TinyShop.AppHost/   → Aspire orchestrator
+Products/           → ASP.NET Core Minimal API (backend)
+Store/              → Blazor Server frontend
+AgentGateway/       → A2A-compatible REST adapter + MCP server
+DataEntities/       → Shared Product model
+Store.Tests/        → Unit & component tests
+```
 
-1. [] Stop debugging and close the application.
+You're all set — proceed to [Part 0: Exploring the Codebase](part0-exploring-codebase.md).
 
-## Summary and next steps
-
-You've now cloned the repository you'll use for this for the rest of the workshop.

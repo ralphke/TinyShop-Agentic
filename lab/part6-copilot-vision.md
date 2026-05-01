@@ -1,16 +1,44 @@
 # Part 6: Using Copilot Vision
 
-In this section, you'll use Copilot Vision. You can share screenshots of errors and Copilot will interpret the image and resolve the issue. Or share mockups of new designs, and Vision will help you bring them to life. Let's update our design based on a photo our design gave us.
+Copilot Vision lets you attach images to a chat message — share a screenshot of a bug, a UI mockup, a design comp, or a diagram, and Copilot will interpret it and generate appropriate code.
 
-1. [] Open a new Copilot Chat thread in Agent mode.
-1. [] Click the **+** button in the chat, select **upload image**, and select the store application image that is found in the GitHub repo that is cloned called **eshop.png** inside of the `C:\Users\LabUser\Source\Repos\build-2025-lab300` directory.
+## Redesign the product grid from an image
 
-    ![Attach image icon](./images/6-add-image.png)
+1. Open Copilot Chat and start a new **Agent** mode conversation.
 
-1. [] Ask: `Update the Products.razor to display products in a grid layout similar to this image. Add nice hover effects and make it responsive.`
-1. [] Review the suggested code changes and implement them. It should recommend changes to both the **Products.razor** and a new **Products.razor.css**
-1. [] Run the application to see the updated product grid layout. You may have to clear the browser cashe with CTRL+SHIFT+R if you don't see the css update.
+1. Attach the design reference image:
 
-> Note: continue to iterate with Copilot Agent if it isn't to your liking.
+   | IDE | How to attach an image |
+   |:----|:-----------------------|
+   | **VS Code / Codespaces** | Click the **paperclip / attach** icon in the chat input box and select the file |
+   | **Visual Studio 2026** | Click the **+** button in the chat input, select **Upload image**, and select the file |
 
-**Key Takeaway**: Copilot Vision can understand UI designs from images and help you implement them in your application.
+   Use the **eshop.png** file in the root of the repository as the design reference.
+
+1. Ask:
+   ```
+   Update Products.razor to display products in a card grid layout similar to this image. Add hover effects, keep it responsive, and put all styles in Products.razor.css.
+   ```
+1. Review the proposed changes to **Products.razor** and **Products.razor.css**.
+1. Accept the changes and run the app to see the result:
+   - **VS Code / Codespaces**: `aspire run`
+   - **Visual Studio 2026**: Press **F5**
+1. If the layout isn't quite right, iterate:
+   ```
+   The card images are too tall. Constrain them to 200px height with object-fit: cover.
+   ```
+
+> **Note:** If you don't see the updated CSS in the browser, do a hard refresh with `Ctrl+Shift+R` / `Cmd+Shift+R`.
+
+## Debug from a screenshot
+
+1. Take a screenshot of any visual issue you notice in the running app (or create one deliberately, e.g. by removing a CSS class).
+1. Attach the screenshot to a new Copilot Chat message and describe the problem:
+   ```
+   The product images in this screenshot are stretched. How do I fix this in the CSS?
+   ```
+1. Review Copilot's diagnosis and suggested fix.
+
+**Key Takeaway**: Copilot Vision bridges the gap between design and code — attach any image and Copilot will reason about it alongside your source files.
+
+

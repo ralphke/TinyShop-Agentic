@@ -1,27 +1,47 @@
 # Part 2: Enhancing UI with Inline Chat
 
-Now, you'll improve the loading experience using Copilot's inline chat.
+In this section you'll use Copilot's inline chat to add new capabilities to the Store UI without leaving your editor context.
 
-> NOTE: This exercise does supply specific prompts to type, but as part of the learning experience we encourage you to discover how to interact with Copilot. Feel free to talk in natural language, describing what you're looking for or need to accomplish.
+> **NOTE:** The prompts below are starting points. Feel free to rephrase them in natural language — describing *what* you want rather than *how* to implement it often produces the best results.
 
-1. [] In the **Solution explorer** under the **Store** project open **Components/Pages/Products.razor**.
-1. [] Find the "Loading..." text in the code.
-1. [] Select this text and right-click.
-1. [] Choose "Ask Copilot" or press `Alt+/`.
-1. [] In the inline chat, type: `Update this to have a loading progress spinner`
+## Exercise 1 — Add a live product search bar
 
-    ![Screenshot of VS with inline chat](./images/2-inline-code.png)
+The Products API now has a `/search` endpoint (added in Part 1). Wire it up in the UI so users can filter the product list in real time.
 
-1. [] Select **Tab** to accept the changes, and it should look similar to:  
+1. Open **Store/Components/Pages/Products.razor**:
+   - **VS Code / Codespaces**: use the **Explorer** panel
+   - **Visual Studio 2026**: use the **Solution Explorer** under the **Store** project → **Components/Pages**
 
-    ```html
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-    ```
+1. Place your cursor just above the `products-grid` div, then open the inline chat:
 
-1. [] Run the application to see your new loading spinner in action.
+   | IDE | How to open inline chat |
+   |:----|:------------------------|
+   | **VS Code / Codespaces** | Press `Ctrl+I` (Windows/Linux) or `Cmd+I` (Mac) |
+   | **Visual Studio 2026** | Right-click the selection and choose **Ask Copilot**, or press `Alt+/` |
 
-1. [] Stop debugging and close the application
+1. Type:
+   ```
+   Add a search input above the product grid. When the user types, call ProductService.SearchProductsAsync(query) and update the products list. Debounce the call by 300 ms.
+   ```
 
-**Key Takeaway**: Inline chat allows you to make targeted improvements to your code without leaving your editor context.
+1. Review the suggestion, accept it, and make sure `SearchProductsAsync` is referenced correctly in the `@code` block.
+
+1. Start the app and verify the search bar filters the product list as you type:
+   - **VS Code / Codespaces**: `aspire run` in the terminal
+   - **Visual Studio 2026**: Press **F5**
+
+1. Stop the app when done.
+
+## Exercise 2 — Add sort controls with inline chat
+
+1. In **Products.razor**, select the `<div class="mb-3 text-muted">` block that shows the product count.
+
+1. Open the inline chat and type:
+   ```
+   Add a sort dropdown next to the product count that lets the user sort by Name (A→Z), Price (low→high), and Price (high→low). Apply the sort to the products list in the @code block.
+   ```
+
+1. Accept the suggestion and run the app to verify the sort options work.
+
+**Key Takeaway**: Inline chat lets you describe *behaviour* in plain English and Copilot generates the wiring — both the markup and the `@code` logic — in one step, without switching context.
+

@@ -1,25 +1,48 @@
-# Part 8: Commit Summary Descriptions
+# Part 8: Commit Summary Descriptions and Code Review
 
-In this section, you'll learn how to use GitHub Copilot to generate commit messages and customize them.
+In this section you'll use Copilot to generate meaningful commit messages and review your changes before pushing.
 
-1. [] Open the **Git Changes** view in Visual Studio (**View -> Git Changes**).
-1. [] Select the sparkle emoji pencil button to automatically generate a commit message using Copilot.
+## Generate a commit message
 
-   ![VS commit dialog with AI button](./images/8-commit.png)
-   
-1. [] Navigate to **Tools -> Options -> GitHub -> Copilot -> Source Control Integration**.
-1. [] Update the commit message customization setting to: `Summarize in a few sentences and then highlight the top 5 changes with emoji and short descriptions`
-1. [] Return to the **Git Changes** view and generate a new commit message.
-1. [] Observe how the new commit message reflects the updated customization.
+| IDE | Steps |
+|:----|:------|
+| **VS Code / Codespaces** | Open the **Source Control** panel (`Ctrl+Shift+G` / `Cmd+Shift+G`) → stage your files → click the **sparkle ✨** (Generate Commit Message) button in the message box |
+| **Visual Studio 2026** | Open **View → Git Changes** → stage your files → click the **sparkle ✨ pencil** button above the commit message box |
 
-**Key Takeaway**: Copilot can help you create meaningful and well-structured commit messages, saving time and improving collaboration.
+Review the generated message — it should summarise what changed across all staged files.
 
-## Code Reviews with Copilot
+## Customise the commit message style
 
-1. [] Before submitting your changes, use the **Code Review** feature to analyze your code for potential improvements and suggestions.
+| IDE | How to customise |
+|:----|:----------------|
+| **VS Code / Codespaces** | Add a `## Commit messages` section to **.github/copilot-instructions.md** with your preferred format |
+| **Visual Studio 2026** | Go to **Tools → Options → GitHub → Copilot → Source Control Integration** and update the commit message prompt field |
 
-   ![Code Review Assistance toggle](./images/8-code-review.png)
+Example customisation:
+```markdown
+## Commit messages
+- Summarise the change in one sentence, then list the top 3–5 changes with emoji and short descriptions.
+```
 
-1. [] Review the suggestions provided by Copilot and apply any necessary changes if there are any.
+Generate a new commit message after the change and compare it to the previous one.
 
-**Key Takeaway**: Copilot's Code Review feature can help you identify potential issues and improve code quality before submission.
+## Run a Copilot code review
+
+| IDE | Steps |
+|:----|:------|
+| **VS Code / Codespaces** | In Copilot Chat, switch to **Ask** mode and ask: `@workspace Review the changes I've made in this session. Are there any potential issues, missing error handling, or improvements I should consider before committing?` |
+| **Visual Studio 2026** | Open **View → Git Changes** → enable the **Code Review Assistance** toggle, then stage your files; Copilot will add inline review comments |
+
+Work through any suggestions that make sense, then commit your changes.
+
+## Push and create a pull request
+
+1. Push your branch:
+   ```bash
+   git push -u origin <your-branch-name>
+   ```
+1. Open the repository on GitHub and create a pull request. Use Copilot to draft the PR description if the option appears in the PR editor.
+
+**Key Takeaway**: Copilot's commit-message generation and code-review capabilities reduce the cognitive overhead of wrapping up a feature, helping you ship higher-quality code with better documentation.
+
+
