@@ -6,8 +6,6 @@ In this section you'll use GitHub Copilot's inline code completion (Ghost Text) 
 
 ## Add a new endpoint
 
-1. Stop the app if it is currently running (`Ctrl+C` in the terminal).
-
 1. In the Explorer panel, open **Products/Endpoints/ProductEndpoints.cs**.
 
 1. Inside the `MapProductEndpoints` method, place your cursor on an empty line after the existing endpoints and start typing:
