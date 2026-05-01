@@ -1,44 +1,34 @@
 # Part 7: Debugging with Copilot
 
-In this section, you'll learn how to use Copilot to debug an exception in your application.
+In this section you'll use Copilot to diagnose runtime exceptions and analyse variables — without leaving VS Code.
 
-1. [] Debug the **AppHost** project if it isn't yet, and open the **store** from teh .NET Aspire dashboard.
-1. [] Click on the **Go to About** button in the navigation menu.
-1. [] Observe that an exception occurs, and the application crashes.
-1. [] Press the **Ask Copilot** option in the pop up.
+## Debug an exception
 
-    ![Pop up for exception with Ask Copilot option](./images/7-ask-copilot-exception.png)
+1. Start the app with `aspire run` and open the Store in your browser.
+1. Navigate to the **About** page in the navigation menu.
+1. Observe that an exception occurs and the page crashes.
+1. Switch back to VS Code and open the **Problems** panel or the integrated terminal where `aspire run` is running — you should see a stack trace.
+1. Copy the exception message and stack trace, then paste it into Copilot Chat:
+   ```
+   The About page throws this exception when I navigate to it:
+   <paste stack trace here>
+   What is the cause and how do I fix it?
+   ```
+1. Review how Copilot identifies the root cause and suggests a fix.
+1. Apply the fix and restart the app to verify the page loads correctly.
 
-1. [] Review how Copilot brings in debugger information, including stack traces and variable states.
-1. [] Note how Copilot recommends a fix for the issue or provides code suggestions to resolve it.
+## Set a breakpoint and inspect variables
 
-**Key Takeaway**: Copilot can assist in diagnosing and fixing exceptions by analyzing debugger information and providing actionable recommendations.
+1. Open **Store/Components/Pages/Products.razor**.
+1. Add a breakpoint at the end of the `OnInitializedAsync` method by clicking in the gutter next to that line.
+1. Start the app in debug mode: press **F5** or use **Run → Start Debugging** in VS Code (with the C# DevKit extension installed).
+1. Navigate to the Products page in the browser to hit the breakpoint.
+1. In the **Variables** panel (or by hovering), inspect the `products` list variable.
+1. In Copilot Chat, ask:
+   ```
+   I'm debugging Products.razor. The products list has these values: <paste variable state>. Are there any products with "outdoor" in the name that cost under $40?
+   ```
+1. Observe how Copilot can reason about variable state and suggest equivalent LINQ queries.
 
-## Using Watch Windows and Visualizers
+**Key Takeaway**: Copilot can accelerate debugging by explaining stack traces, suggesting fixes, and helping you reason about variable state — all within your editor.
 
-In this subsection, you'll learn how to use Copilot to analyze variables using watch windows and visualizers.
-
-1. [] Open the **Products.razor** file again from the **Products** projet.
-1. [] Add a breakpoint at the end of the **OnInitializedAsync** method.
-1. [] Debug the **TinyShop.AppHost** and open the **store** from the .NET Aspire dashboard, and navigate to the **Products** page.
-1. [] When the breakpoint is hit, hover over the **imagePrefix** variable.
-1. [] Press the **Copilot** button to analyze the **imagePrefix** variable.
-
-    ![Copilot button on variable](./images/7-inspect-variable.png)
-
-    >Note: you can also see these in the Locals or watch windows
-
-1. [] Observe how Copilot provides detailed information about the variable, including its value and potential issues.
-1. [] Hover over the **products** collection and click the **View** button with the magnifier icon.
-
-    ![View button on products](./images/7-view-products.png)
-
-1. [] Use the visualizer to inspect the contents of the **products** collection.
-1. [] Click the sparkle button and, in natural language, type:  `Products that have the name outdoor in them and are under 40 dollars`
-1. [] Observe how Copilot generates the appropriate expression automatically.
-
-    ![Sparkle icon for visualizer](./images/7-visualizer-sparkle.png)
-
-1. [] Click **Continue in Chat** to have Copilot provide the equivalent LINQ query for the same filter criteria.
-
-**Key Takeaway**: Copilot can enhance debugging by providing detailed insights into variables through watch windows and visualizers. Copilot can simplify complex debugging tasks by generating expressions and LINQ queries based on natural language input.

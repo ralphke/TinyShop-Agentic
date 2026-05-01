@@ -1,50 +1,37 @@
 # Part 4: Using Custom Instructions
 
-There are always key pieces of information anyone generating code for your codebase needs to know - the technologies in use, coding standards to follow, project structure, etc. Since context is so important, as we've discussed, we likely want to ensure Copilot always has this information as well. Fortunately, we can provide this overview through the use of Copilot instructions.
+Copilot instructions let you encode project-wide context — the technologies in use, coding conventions, test placement, etc. — so every chat response automatically follows your standards.
 
-Before we begin larger updates to the site with the help of Copilot, we want to ensure Copilot has a good understanding of how we're building our application. As a result, we're going to add a Copilot instructions file to the repository.
+## Why custom instructions matter
 
-Copilot instructions is a markdown file is placed in your **.github** folder. It becomes part of your project, and in turn is available to all contributors to your codebase. You can use this file to indicate various coding standards you wish to follow, the technologies your project uses, or anything else important for Copilot Chat to understand when generating suggestions.
+Without instructions, Copilot may suggest:
+- `AddSingleton` instead of `AddScoped` for a service
+- `Assert.Equal` instead of FluentAssertions `.Should().Be()`
+- Inline `<style>` blocks instead of `.razor.css` files
 
-> [!IMPORTANT]
-> The *copilot-instructions.md* file is included in **every** call to GitHub Copilot Chat, and will be part of the context sent to Copilot. Because there is always a limited set of tokens an LLM can operate on, a large Copilot instructions file can obscure relevant information. As such, you should limit your Copilot instructions file to project-wide information, providing an overview of what you're building and how you're building it. If you need to provide more specific information for particular tasks, you can create [prompt files](https://docs.github.com/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot?tool=vscode#about-prompt-files).
+A well-crafted instructions file eliminates these mismatches for every developer on the team.
 
-Here are some guidelines to consider when creating a Copilot instructions file:
+## Review the existing instructions file
 
-- The Copilot instructions file becomes part of the project, meaning it will apply to every developer; anything indicated in the file should be globally applicable.
-- The file is markdown, so you can take advantage of that fact by grouping content together to improve readability.
-- Provide an overview of **what** you are building and **how** you are building it, including:
-    - languages, frameworks and libraries in use.
-    - required assets to be generated (such as unit tests) and where they should be placed.
-    - any language specific rules
-- If you notice GitHub Copilot consistently provides an unexpected suggestion (e.g. using class components for React), add those notes to the instructions file.
+1. In the Explorer panel, open **.github/copilot-instructions.md**.
+1. Read the existing content — it describes the architecture, dev container, running, testing, and coding conventions.
 
-## Create a Copilot instructions file
+## Extend the instructions
 
-1. [] In the **Solution Explorer**, expand the **Solution Items** and open **copilot-instructions.md**
+1. Open Copilot Chat and ask: `@workspace What coding conventions are NOT yet captured in .github/copilot-instructions.md?`
+1. Add any missing conventions you'd like Copilot to follow. Some suggestions:
+   - Preferred error handling patterns
+   - Naming conventions for Blazor components
+   - Rules for adding new Aspire resources
 
-1. [] Add project-specific information about your application:
+## Verify the instructions take effect
 
-    ```markdown
-    ### Backend
-    - Products project is the backend API.
-    - Built with .NET Minimal APIs.
-    - Uses Entity Framework Core with an in-memory database.
-    - Should follow OpenAPI best practices.
+1. Start a **new** chat (click **+**) so the updated file is included.
+1. Re-run the prompt from Part 3:
+   ```
+   #file:ProductService.cs How would I implement getting and visualizing the products in a table, including the CSS?
+   ```
+1. Compare the response to what you received before. Notice how the suggestions now align with the conventions in the instructions file (e.g., `.razor.css` files, FluentAssertions syntax, correct service lifetimes).
 
-    ### Frontend
-    - Store project is a .NET 9 Blazor Server application.
-    - Uses default Bootstrap styling.
-    - UI should have a modern look and feel.
-    - CSS should be in .razor.css files.
-    ```
-1. Start a new chat by clicking the `+` icon in the top right corner of the chat window.
+**Key Takeaway**: Custom instructions make Copilot's suggestions consistently aligned with your project's standards and architecture, benefiting every developer who works in the repository.
 
-   ![New chat](./images/5-new-edits.png)
-
-1. [] Go back to Copilot Chat and re-run the prompt from Part 3, you can do this by pressing the up key. or
-1. [] Ask: `How would I implement getting and visualizing the products in a table using the code in #ProductService and the css required.`
-1. [] Review the code suggestion but don't implement it yet.
-1. [] Notice how the responses now incorporate your custom instructions.
-
-**Key Takeaway**: Custom instructions make Copilot's suggestions more aligned with your project standards and architecture preferences.

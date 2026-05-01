@@ -1,27 +1,27 @@
 # Part 2: Enhancing UI with Inline Chat
 
-Now, you'll improve the loading experience using Copilot's inline chat.
+In this section you'll use Copilot's inline chat to improve the UI without leaving your editor context.
 
-> NOTE: This exercise does supply specific prompts to type, but as part of the learning experience we encourage you to discover how to interact with Copilot. Feel free to talk in natural language, describing what you're looking for or need to accomplish.
+> **NOTE:** The prompts below are starting points. Feel free to rephrase them in natural language — describing *what* you want rather than *how* to implement it often produces the best results.
 
-1. [] In the **Solution explorer** under the **Store** project open **Components/Pages/Products.razor**.
-1. [] Find the "Loading..." text in the code.
-1. [] Select this text and right-click.
-1. [] Choose "Ask Copilot" or press `Alt+/`.
-1. [] In the inline chat, type: `Update this to have a loading progress spinner`
+## Add a loading spinner
 
-    ![Screenshot of VS with inline chat](./images/2-inline-code.png)
+1. In the Explorer panel, open **Store/Components/Pages/Products.razor**.
+1. Find the `"Loading..."` text in the component markup.
+1. Select that text.
+1. Press `Ctrl+I` (Windows/Linux) or `Cmd+I` (Mac) to open the **inline chat**.
+1. Type: `Update this to show a Bootstrap loading spinner`
+1. Review the suggestion and press **Accept** (or **Tab**) if it looks correct.
 
-1. [] Select **Tab** to accept the changes, and it should look similar to:  
+   The result should look similar to:
+   ```html
+   <div class="spinner-border text-primary" role="status">
+       <span class="visually-hidden">Loading...</span>
+   </div>
+   ```
 
-    ```html
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-    ```
+1. Start the app with `aspire run` and navigate to the **Products** page to see the spinner in action.
+1. Stop the app when done.
 
-1. [] Run the application to see your new loading spinner in action.
+**Key Takeaway**: Inline chat lets you make targeted improvements to specific code sections without switching context, and without opening a separate chat window.
 
-1. [] Stop debugging and close the application
-
-**Key Takeaway**: Inline chat allows you to make targeted improvements to your code without leaving your editor context.
