@@ -56,7 +56,7 @@ BenchmarkSuite1         → BenchmarkDotNet performance benchmarks
 
 ### Option B — Local Dev Container (VS Code + Docker Desktop)
 
-This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker-in-Docker enabled so Aspire can start its SQL Server container from inside the development container.
+This repository includes a Linux dev container in [.devcontainer/devcontainer.json](.devcontainer/devcontainer.json) with Docker-in-Docker enabled to support Aspire and other container-based development workflows from inside the development container.
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop) and start it.
 2. Clone the repository **inside your WSL filesystem** (e.g. `~/src/TinyShop-Agentic`) — do **not** clone under `/mnt/d/...`.
