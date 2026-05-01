@@ -53,7 +53,7 @@ In this section you'll use GitHub Copilot's inline code completion (Ghost Text) 
 
 ## Try Next Edit Suggestions (NES)
 
-1. In the `GET /{id}` endpoint, rename the parameter from `id` to `productId`.
+1. In the `GET /{id}` endpoint, rename the parameter from `productId` to `id`.
 1. Notice how Copilot's Next Edit Suggestions highlight the other places in the same scope that also need updating, and offer to apply them automatically.
 
 ## Generate XML documentation
