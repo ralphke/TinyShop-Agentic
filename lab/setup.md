@@ -64,7 +64,7 @@ GitHub Copilot is integrated into the VS 2026 shell — no separate extension in
 
 ## Explore the running application
 
-Once the app is running, the following ports are forwarded (Aspire) or available (Docker Compose):
+Once the app is running, the following ports are forwarded by the devcontainer:
 
 | Service         | URL                                  |
 |:----------------|:-------------------------------------|
@@ -72,7 +72,8 @@ Once the app is running, the following ports are forwarded (Aspire) or available
 | Store (Blazor)  | http://localhost:5158                |
 | Products API    | http://localhost:5228/api/Product    |
 | Checkout        | http://localhost:5158/checkout       |
-| Agent Gateway   | http://localhost:5290/api/agent-gateway/agent-card |
+
+> **Agent Gateway**: the AgentGateway port is assigned dynamically by Aspire and is not forwarded by default. To reach it, open the **Aspire Dashboard** (http://localhost:15218) and copy the URL shown next to the **agent-gateway** resource.
 
 Open the Store in your browser, browse products, and add a few items to the cart.
 

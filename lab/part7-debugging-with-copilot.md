@@ -2,31 +2,6 @@
 
 In this section you'll use Copilot to diagnose runtime exceptions and analyse variables — without leaving your IDE.
 
-## Debug an exception
-
-1. Start the app and open the Store in your browser:
-   - **VS Code / Codespaces**: `aspire run`
-   - **Visual Studio 2026**: Press **F5**
-
-1. Navigate to the **About** page in the navigation menu and observe that an exception occurs.
-
-1. Get the error details:
-
-   | IDE | What to look at |
-   |:----|:----------------|
-   | **VS Code / Codespaces** | Open the **Problems** panel or the integrated terminal running `aspire run` — you'll see the stack trace there |
-   | **Visual Studio 2026** | An exception popup appears in the editor with an **Ask Copilot** button — click it and Copilot automatically pulls in the stack trace and variable state |
-
-1. If using VS Code / Codespaces, copy the exception message and stack trace, then paste it into Copilot Chat:
-   ```
-   The About page throws this exception when I navigate to it:
-   <paste stack trace here>
-   What is the cause and how do I fix it?
-   ```
-
-1. Review how Copilot identifies the root cause and suggests a fix.
-1. Apply the fix and restart the app to verify the page loads correctly.
-
 ## Set a breakpoint and inspect variables
 
 1. Open **Store/Components/Pages/Products.razor**.
