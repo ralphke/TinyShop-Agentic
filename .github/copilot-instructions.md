@@ -2,43 +2,33 @@
 
 TinyShop is a .NET Aspire cloud-native e-commerce app. The Aspire AppHost (`TinyShop.AppHost`) orchestrates all services including a SQL Server container, the Products API, and the Store Blazor frontend.
 
+## Quick Start
+
+```bash
+aspire run    # starts sqlserver → products → store
+```
+
+**Ports**: Dashboard (15218) | Products API (5228) | Store (5158)
+
+---
+
+## Commands
+
+| Task | Command |
+|------|---------|
+| Run all services | `aspire run` |
+| Run all tests | `dotnet test src/TinyShop.sln` |
+| Run single test project | `dotnet test src/Store.Tests` |
+| Run test by name | `dotnet test src/Store.Tests --filter "FullyQualifiedName~AddItem_WhenProductIsNew"` |
+| Run benchmarks | `dotnet run --project src/BenchmarkSuite1 --configuration Release` |
+
+> **Note**: Restart `aspire run` only when `TinyShop.AppHost/Program.cs` changes. Hot reload handles all others.
+
+---
+
 ## Dev Container
 
-A devcontainer is configured in `.devcontainer/`. It provides a ready-to-code Linux environment with .NET 10 and Docker CLI configured to use the host Docker Desktop daemon, Node.js, the Aspire CLI, and the C# DevKit VS Code extension — no local tooling needed.
-
-Open in GitHub Codespaces or VS Code with the Dev Containers extension, then:
-
-```bash
-aspire run          # starts sqlserver → products → store
-```
-
-In the Docker Compose workflow, the repo also includes an `init-db` service that provisions `TinyShopDB` before `products` starts.
-
-Forwarded ports (HTTP):
-- `15218` — Aspire Dashboard (opens automatically)
-- `5228`  — Products API
-- `5158`  — Store (Blazor)
-
-## Running and Testing
-
-```bash
-# Run the full application (preferred — starts all services + SQL Server container)
-aspire run
-
-# Run all tests
-dotnet test src/TinyShop.sln
-
-# Run a single test project
-dotnet test src/Store.Tests
-
-# Run a single test by name
-dotnet test src/Store.Tests --filter "FullyQualifiedName~AddItem_WhenProductIsNew"
-
-# Run benchmarks (always use Release)
-dotnet run --project src/BenchmarkSuite1 --configuration Release
-```
-
-> Restart with `aspire run` only when `TinyShop.AppHost/Program.cs` changes. Hot reload handles all other changes.
+Linux environment in `.devcontainer/` with .NET 10, Docker CLI, Node.js, Aspire CLI, C# DevKit. Open in Codespaces or VS Code and run `aspire run`.
 
 ## Architecture
 

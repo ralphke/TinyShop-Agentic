@@ -1,5 +1,5 @@
 # init-db client image for TinyShop
-FROM ubuntu:noble-20260410
+FROM ubuntu:25.10 AS sql-init
 # Install necessary dependencies and tools for SQL operations
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ACCEPT_EULA=Y
