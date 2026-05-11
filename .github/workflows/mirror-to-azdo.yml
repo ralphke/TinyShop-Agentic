@@ -1,23 +1,40 @@
-name: Mirror to Azure DevOps
-
+name: Mirror to Azure DevOps 
 on:
   push:
     branches:
       - '**'
+  delete:
 
 jobs:
   mirror:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Push to Azure DevOps
+      - name: Validate inputs
+        run: |
+          echo "AZDO_REPO_URL=${AZDO_REPO_URL}"
+          if [ -z "$AZDO_PAT" ]; then
+            echo "AZDO_PAT is missing"
+            exit 1
+          fi
+          if [ -z "$AZDO_REPO_URL" ]; then
+            echo "AZDO_REPO_URL is missing"
+            exit 1
+          fi
+        env:
+          AZDO_PAT: ${{ secrets.AZDO_PAT }}
+          AZDO_REPO_URL: ${{ vars.AZDO_REPO_URL }}
+
+      - name: Push mirror to Azure DevOps
         run: |
           git remote remove azdo 2>/dev/null || true
-          git remote add azdo "https://:${AZDO_PAT}@dev.azure.com/RaKeTe-AzureDevOps/TinyShop-Agentic/_git/TinyShop-Agentic"
+          git remote add azdo "https://:${AZDO_PAT}@${AZDO_REPO_URL#https://}"
           git push azdo --mirror
         env:
           AZDO_PAT: ${{ secrets.AZDO_PAT }}
+          AZDO_REPO_URL: ${{ vars.AZDO_REPO_URL }}
