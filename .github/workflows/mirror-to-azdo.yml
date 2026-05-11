@@ -1,0 +1,25 @@
+name: Mirror to Azure DevOps
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to Azure DevOps
+        run: |
+          git config --global user.name "github-mirror"
+          git config --global user.email "mirror@github"
+          git remote add azdo https://:${AZDO_PAT}@${AZDO_REPO_URL#https://}
+          git push azdo --mirror
+        env:
+          AZDO_PAT: ${{ secrets.AZDO_PAT }}
+          AZDO_REPO_URL: ${{ secrets.AZDO_REPO_URL }}
