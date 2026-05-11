@@ -16,8 +16,6 @@ jobs:
 
       - name: Push to Azure DevOps
         run: |
-          git config --global user.name "github-mirror"
-          git config --global user.email "mirror@github"
           git remote add azdo https://:${AZDO_PAT}@${AZDO_REPO_URL#https://}
           git push azdo --mirror
         env:
